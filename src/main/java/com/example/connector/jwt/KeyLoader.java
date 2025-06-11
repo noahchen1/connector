@@ -11,19 +11,20 @@ import java.util.Base64;
 import com.example.connector.ConnectorApplication;
 
 public class KeyLoader {
-    public static ECPrivateKey loadEcPrivateKey(String envVarName) throws Exception {
-    String keyPem = System.getenv(envVarName);
-    if (keyPem == null) {
-        throw new RuntimeException("Environment variable " + envVarName + " not set");
-    }
-    keyPem = keyPem
-            .replaceAll("-----BEGIN (.*)-----", "")
-            .replaceAll("-----END (.*)-----", "")
-            .replaceAll("\\s", "");
-    byte[] keyBytes = Base64.getDecoder().decode(keyPem);
-    PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
-    KeyFactory kf = KeyFactory.getInstance("EC");
-    return (ECPrivateKey) kf.generatePrivate(spec);
-}
+    public static ECPrivateKey loadEcPrivateKey(String resourcePath) throws Exception {
+        InputStream is = ConnectorApplication.class.getClassLoader().getResourceAsStream(resourcePath);
+        if (is == null)
+            throw new RuntimeException("private.pem not found in resources");
+        // String keyPem = System.getenv(envVarName); for deployment
+        String keyPem = new String(is.readAllBytes(), StandardCharsets.UTF_8)
+                .replaceAll("-----BEGIN (.*)-----", "")
+                .replaceAll("-----END (.*)-----", "")
+                .replaceAll("\\s", "");
+        byte[] keyBytes = Base64.getDecoder().decode(keyPem);
+        PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyBytes);
+        KeyFactory kf = KeyFactory.getInstance("EC");
+        PrivateKey privateKey = kf.generatePrivate(spec);
+
+        return (ECPrivateKey) privateKey;
     }
 }
