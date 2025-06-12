@@ -27,7 +27,7 @@ public class NetsuiteAuthClient {
     }
 
     public String fetchAccessToken() throws Exception {
-        ECPrivateKey privateKey = KeyLoader.loadEcPrivateKey("PRIVATE_KEY");
+        ECPrivateKey privateKey = KeyLoader.loadEcPrivateKey("private.pem");
 
         String jwt = jwtService.createJwt(
                 config.getClientId(),
