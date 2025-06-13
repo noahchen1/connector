@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Bean;
 import com.example.connector.dto.TokenResponseDto;
 import com.example.connector.netsuite.NetsuiteAuthClient;
 import com.example.connector.netsuite.NetsuiteCustomerClient;
+import com.example.connector.service.CustomerService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootApplication
@@ -18,6 +19,9 @@ public class ConnectorApplication implements CommandLineRunner {
 
 	@Autowired
 	private NetsuiteCustomerClient netsuiteCustomerClient;
+
+	@Autowired
+	private CustomerService customerService;
 
 	private String accessToken;
 	private long expiresIn;
@@ -31,6 +35,8 @@ public class ConnectorApplication implements CommandLineRunner {
 			accessToken = parsedRes.getAccess_token();
 			expiresIn = System.currentTimeMillis() + parsedRes.getExpires_in();
 			// String custResponse = netsuiteCustomerClient.getCustomerEmail(token, "149777");
+
+			customerService.getCustomers();
 
 		} catch (Exception e) {
 			e.printStackTrace();
