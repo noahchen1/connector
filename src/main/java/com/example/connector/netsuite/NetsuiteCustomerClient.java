@@ -31,4 +31,32 @@ public class NetsuiteCustomerClient {
 
         return body;
     }
+
+    public String getCustomers(String accessToken) throws Exception {
+        final String query = """
+                {
+                    "q": "SELECT top(10) BUILTIN.DF(entity.id) AS cust_id, \
+                    entity.firstname AS firstname, \
+                    entity.lastname AS lastname, \
+                    entity.email AS email \
+                    FROM entity \
+                    JOIN customer ON customer.id = entity.id \
+                    WHERE EXTRACT(MONTH FROM TO_DATE(entity.datecreated, 'MM/DD/YYYY')) = EXTRACT(MONTH FROM CURRENT_DATE) \
+                    AND EXTRACT(YEAR FROM TO_DATE(entity.datecreated, 'MM/DD/YYYY')) = EXTRACT(YEAR FROM CURRENT_DATE)"
+                }
+                """;
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://5405357-sb1.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql"))
+                .header("Authorization", "Bearer " + accessToken)
+                .header("Content-Type", "application/json")
+                .header("Prefer", "transient")
+                .POST(HttpRequest.BodyPublishers.ofString(query))
+                .build();
+
+        HttpClient client = HttpClient.newHttpClient();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+        return response.body();
+    }
 }
