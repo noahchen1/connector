@@ -5,10 +5,12 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
+import com.example.connector.config.DbConfig;
+
 public class DbConnection {
-    private static final String DB_URL = "jdbc:postgresql://database-1.ct66kuqcw99y.us-east-2.rds.amazonaws.com:5432/postgres";
-    private static final String DB_USERNAME = "postgres";
-    private static final String DB_PASSWORD = "!Sr19960309";
+    private static final String DB_URL = DbConfig.getDbHost();
+    private static final String DB_USERNAME = DbConfig.getDbUser();
+    private static final String DB_PASSWORD = DbConfig.getDbPassword();
 
     public static Connection getConnection() throws SQLException {
         try {

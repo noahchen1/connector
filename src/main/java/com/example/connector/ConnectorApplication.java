@@ -36,9 +36,9 @@ public class ConnectorApplication implements CommandLineRunner {
 
 			System.out.println(accessToken);
 			// expiresIn = System.currentTimeMillis() + parsedRes.getExpires_in();
-			// String custResponse = netsuiteCustomerClient.getCustomerEmail(token, "149777");
+			// String custResponse = netsuiteCustomerClient.getCustomerEmail(accessToken, "149777");
 
-			// customerService.getCustomers();
+			customerService.getCustomers();
 
 		} catch (Exception e) {
 			e.printStackTrace();
