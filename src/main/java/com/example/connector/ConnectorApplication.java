@@ -33,10 +33,12 @@ public class ConnectorApplication implements CommandLineRunner {
 			ObjectMapper mapper = new ObjectMapper();
 			TokenResponseDto parsedRes = mapper.readValue(tokenRes, TokenResponseDto.class);
 			accessToken = parsedRes.getAccess_token();
-			expiresIn = System.currentTimeMillis() + parsedRes.getExpires_in();
+
+			System.out.println(accessToken);
+			// expiresIn = System.currentTimeMillis() + parsedRes.getExpires_in();
 			// String custResponse = netsuiteCustomerClient.getCustomerEmail(token, "149777");
 
-			customerService.getCustomers();
+			// customerService.getCustomers();
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -47,6 +49,3 @@ public class ConnectorApplication implements CommandLineRunner {
 		SpringApplication.run(ConnectorApplication.class, args);
 	}
 }
-
-
-
