@@ -4,8 +4,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.List;
 
 import org.springframework.stereotype.Component;
+
+import com.example.connector.dto.CustomerResponseDto;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
 public class NetsuiteCustomerClient {
@@ -32,7 +36,7 @@ public class NetsuiteCustomerClient {
         return body;
     }
 
-    public String getCustomers(String accessToken) throws Exception {
+    public List<CustomerResponseDto.CustomerItem> getCustomers(String accessToken) throws Exception {
         final String query = """
                 {
                     "q": "SELECT top(10) BUILTIN.DF(entity.id) AS cust_id, \
@@ -57,6 +61,10 @@ public class NetsuiteCustomerClient {
         HttpClient client = HttpClient.newHttpClient();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-        return response.body();
+        ObjectMapper mapper = new ObjectMapper();
+        CustomerResponseDto parsedResponse = mapper.readValue(response.body(), CustomerResponseDto.class);
+        List<CustomerResponseDto.CustomerItem> customers = parsedResponse.getItems();
+
+        return customers;
     }
 }

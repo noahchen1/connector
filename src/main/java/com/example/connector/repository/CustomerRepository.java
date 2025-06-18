@@ -3,10 +3,12 @@ package com.example.connector.repository;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 import com.example.connector.aws.DbConnection;
+import com.example.connector.dto.CustomerDto;
 import com.example.connector.dto.CustomerResponseDto;
 
 public class CustomerRepository {
@@ -74,6 +76,29 @@ public class CustomerRepository {
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
         }
+    }
 
+
+    public List<CustomerDto> getAllCustomers() throws Exception {
+        List<CustomerDto> customers = new ArrayList<>();
+
+        try (Connection conn = DbConnection.getConnection()) {
+            String sql = "SELECT cust_id, email, firstname, lastname FROM customers";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                CustomerDto customer = new CustomerDto();
+                customer.setCustId(rs.getString("cust_id"));
+                customer.setEmail(rs.getString("email"));
+                customer.setFirstname(rs.getString("firstname"));
+                customer.setLastname(rs.getString("lastname"));
+                customers.add(customer);
+            }
+        } catch (Exception e) {
+            System.err.println("Error: " + e.getMessage());
+        }
+
+        return customers;
     }
 }

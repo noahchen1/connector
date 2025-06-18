@@ -38,7 +38,6 @@ public class ConnectorApplication implements CommandLineRunner {
 			// String custResponse = netsuiteCustomerClient.getCustomerEmail(accessToken, "149777");
 
 			customerService.syncCustomers(accessToken, netsuiteCustomerClient);
-
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
