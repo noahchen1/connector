@@ -1,4 +1,5 @@
 package com.example.connector.service;
+
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -16,12 +17,13 @@ public class CustomerService {
         String customerJson = netsuiteCustomerClient.getCustomers(accessToken);
         ObjectMapper mapper = new ObjectMapper();
         CustomerResponseDto response = mapper.readValue(customerJson, CustomerResponseDto.class);
-
         List<CustomerResponseDto.CustomerItem> customers = response.getItems();
 
         if (customers != null) {
-            customerRepository.printAllCustomers();
+            customerRepository.updateCustomers(customers);
             System.out.println("Customers synced to DB.");
+
+            customerRepository.printAllCustomers();
         }
     }
 

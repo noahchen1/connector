@@ -4,25 +4,56 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.List;
+import java.util.Objects;
 
 import com.example.connector.aws.DbConnection;
 import com.example.connector.dto.CustomerResponseDto;
 
 public class CustomerRepository {
-    public void saveCustomers(List<CustomerResponseDto.CustomerItem> customers) throws Exception {
+    public void updateCustomers(List<CustomerResponseDto.CustomerItem> customers) throws Exception {
         try (Connection conn = DbConnection.getConnection()) {
-            final String sql = "INSERT INTO customers (cust_id, email, firstname, lastname) VALUES (?, ?, ?, ?) ";
-            PreparedStatement stmt = conn.prepareStatement(sql);
+            final String selectSql = "SELECT email, firstname, lastname FROM customers WHERE cust_id = ?";
+            final String insertSql = "INSERT INTO customers (cust_id, email, firstname, lastname) VALUES (?, ?, ?, ?) ";
+            final String updateSql = "UPDATE customers SET email = ?, firstname = ?, lastname = ? WHERE cust_id = ?";
 
             for (CustomerResponseDto.CustomerItem customer : customers) {
-                stmt.setString(1, customer.getCust_id());
-                stmt.setString(2, customer.getEmail());
-                stmt.setString(3, customer.getFirstname());
-                stmt.setString(4, customer.getLastname());
-                stmt.addBatch();
+                PreparedStatement selectStmt = conn.prepareStatement(selectSql);
+                selectStmt.setString(1, customer.getCust_id());
+                ResultSet rs = selectStmt.executeQuery();
+
+                if (rs.next()) {
+                    boolean needsUpdate = false;
+
+                    if (!Objects.equals(rs.getString("email"), customer.getEmail()))
+                        needsUpdate = true;
+                    if (!Objects.equals(rs.getString("firstname"), customer.getFirstname()))
+                        needsUpdate = true;
+                    if (!Objects.equals(rs.getString("lastname"), customer.getLastname()))
+                        needsUpdate = true;
+
+                    if (needsUpdate) {
+                        PreparedStatement updateStmt = conn.prepareStatement(updateSql);
+                        updateStmt.setString(1, customer.getEmail());
+                        updateStmt.setString(2, customer.getFirstname());
+                        updateStmt.setString(3, customer.getLastname());
+                        updateStmt.setString(4, customer.getCust_id());
+                        updateStmt.executeUpdate();
+                        updateStmt.close();
+                    }
+
+                } else {
+                    PreparedStatement insertStmt = conn.prepareStatement(insertSql);
+                    insertStmt.setString(1, customer.getCust_id());
+                    insertStmt.setString(2, customer.getEmail());
+                    insertStmt.setString(3, customer.getFirstname());
+                    insertStmt.setString(4, customer.getLastname());
+                    insertStmt.executeUpdate();
+                    insertStmt.close();
+                }
+
+                selectStmt.close();
             }
 
-            stmt.executeBatch();
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
         }
