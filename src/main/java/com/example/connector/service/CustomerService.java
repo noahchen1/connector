@@ -16,6 +16,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class CustomerService {
     private final CustomerRepository customerRepository = new CustomerRepository();
 
+    private CustomerDto toCustomerDto(CustomerResponseDto.CustomerItem item) {
+        CustomerDto customer = new CustomerDto();
+
+        customer.setCustId(item.getCust_id());
+        customer.setEmail(item.getEmail());
+        customer.setFirstname(item.getFirstname());
+        customer.setLastname(item.getLastname());
+
+        return customer;
+    }
+
     public void syncCustomers(String accessToken, NetsuiteCustomerClient netsuiteCustomerClient) throws Exception {
         // String customerJson = netsuiteCustomerClient.getCustomers(accessToken);
         // ObjectMapper mapper = new ObjectMapper();
@@ -33,9 +44,39 @@ public class CustomerService {
         List<CustomerResponseDto.CustomerItem> nsCustomers = netsuiteCustomerClient.getCustomers(accessToken);
         List<CustomerDto> dbCustomers = customerRepository.getAllCustomers();
 
-        Map<String, CustomerDto> dbMap = dbCustomers.stream().collect(Collectors.toMap(CustomerDto::getCustId, c -> c));
+        List<CustomerDto> parsedNsCustomers = nsCustomers.stream()
+                .map(this::toCustomerDto)
+                .collect(Collectors.toList());
 
-        System.out.println(dbMap);
+        Map<String, CustomerDto> nsMap = parsedNsCustomers.stream()
+                .collect(Collectors.toMap(CustomerDto::getCustId, c -> c));
+        Map<String, CustomerDto> dbMap = dbCustomers.stream()
+                .collect(Collectors.toMap(CustomerDto::getCustId, c -> c));
+
+        // Collect for batch processing
+        List<CustomerDto> toInsert = new java.util.ArrayList<>();
+        List<CustomerDto> toUpdate = new java.util.ArrayList<>();
+
+        for (CustomerDto nsCustomer : parsedNsCustomers) {
+            CustomerDto dbCustomer = dbMap.get(nsCustomer.getCustId());
+            if (dbCustomer == null) {
+                toInsert.add(nsCustomer);
+            } else if (!nsCustomer.equals(dbCustomer)) {
+                toUpdate.add(nsCustomer);
+            }
+        }
+
+        customerRepository.insertCustomers(toInsert);
+        customerRepository.updateCustomers(toUpdate);
+
+        // NetSuite sync logic remains the same
+        for (CustomerDto dbCustomer : dbCustomers) {
+            CustomerDto nsCustomer = nsMap.get(dbCustomer.getCustId());
+            if (nsCustomer == null) {
+                netsuiteCustomerClient.createCustomer(accessToken, dbCustomer);
+            } else if (!dbCustomer.equals(nsCustomer)) {
+                netsuiteCustomerClient.updateCustomer(accessToken, dbCustomer);
+            }
+        }
     }
-
 }

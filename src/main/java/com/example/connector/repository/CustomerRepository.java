@@ -12,54 +12,54 @@ import com.example.connector.dto.CustomerDto;
 import com.example.connector.dto.CustomerResponseDto;
 
 public class CustomerRepository {
-    public void updateCustomers(List<CustomerResponseDto.CustomerItem> customers) throws Exception {
-        try (Connection conn = DbConnection.getConnection()) {
-            final String selectSql = "SELECT email, firstname, lastname FROM customers WHERE cust_id = ?";
-            final String insertSql = "INSERT INTO customers (cust_id, email, firstname, lastname) VALUES (?, ?, ?, ?) ";
-            final String updateSql = "UPDATE customers SET email = ?, firstname = ?, lastname = ? WHERE cust_id = ?";
+    // public void updateCustomers(List<CustomerResponseDto.CustomerItem> customers) throws Exception {
+    //     try (Connection conn = DbConnection.getConnection()) {
+    //         final String selectSql = "SELECT email, firstname, lastname FROM customers WHERE cust_id = ?";
+    //         final String insertSql = "INSERT INTO customers (cust_id, email, firstname, lastname) VALUES (?, ?, ?, ?) ";
+    //         final String updateSql = "UPDATE customers SET email = ?, firstname = ?, lastname = ? WHERE cust_id = ?";
 
-            for (CustomerResponseDto.CustomerItem customer : customers) {
-                PreparedStatement selectStmt = conn.prepareStatement(selectSql);
-                selectStmt.setString(1, customer.getCust_id());
-                ResultSet rs = selectStmt.executeQuery();
+    //         for (CustomerResponseDto.CustomerItem customer : customers) {
+    //             PreparedStatement selectStmt = conn.prepareStatement(selectSql);
+    //             selectStmt.setString(1, customer.getCust_id());
+    //             ResultSet rs = selectStmt.executeQuery();
 
-                if (rs.next()) {
-                    boolean needsUpdate = false;
+    //             if (rs.next()) {
+    //                 boolean needsUpdate = false;
 
-                    if (!Objects.equals(rs.getString("email"), customer.getEmail()))
-                        needsUpdate = true;
-                    if (!Objects.equals(rs.getString("firstname"), customer.getFirstname()))
-                        needsUpdate = true;
-                    if (!Objects.equals(rs.getString("lastname"), customer.getLastname()))
-                        needsUpdate = true;
+    //                 if (!Objects.equals(rs.getString("email"), customer.getEmail()))
+    //                     needsUpdate = true;
+    //                 if (!Objects.equals(rs.getString("firstname"), customer.getFirstname()))
+    //                     needsUpdate = true;
+    //                 if (!Objects.equals(rs.getString("lastname"), customer.getLastname()))
+    //                     needsUpdate = true;
 
-                    if (needsUpdate) {
-                        PreparedStatement updateStmt = conn.prepareStatement(updateSql);
-                        updateStmt.setString(1, customer.getEmail());
-                        updateStmt.setString(2, customer.getFirstname());
-                        updateStmt.setString(3, customer.getLastname());
-                        updateStmt.setString(4, customer.getCust_id());
-                        updateStmt.executeUpdate();
-                        updateStmt.close();
-                    }
+    //                 if (needsUpdate) {
+    //                     PreparedStatement updateStmt = conn.prepareStatement(updateSql);
+    //                     updateStmt.setString(1, customer.getEmail());
+    //                     updateStmt.setString(2, customer.getFirstname());
+    //                     updateStmt.setString(3, customer.getLastname());
+    //                     updateStmt.setString(4, customer.getCust_id());
+    //                     updateStmt.executeUpdate();
+    //                     updateStmt.close();
+    //                 }
 
-                } else {
-                    PreparedStatement insertStmt = conn.prepareStatement(insertSql);
-                    insertStmt.setString(1, customer.getCust_id());
-                    insertStmt.setString(2, customer.getEmail());
-                    insertStmt.setString(3, customer.getFirstname());
-                    insertStmt.setString(4, customer.getLastname());
-                    insertStmt.executeUpdate();
-                    insertStmt.close();
-                }
+    //             } else {
+    //                 PreparedStatement insertStmt = conn.prepareStatement(insertSql);
+    //                 insertStmt.setString(1, customer.getCust_id());
+    //                 insertStmt.setString(2, customer.getEmail());
+    //                 insertStmt.setString(3, customer.getFirstname());
+    //                 insertStmt.setString(4, customer.getLastname());
+    //                 insertStmt.executeUpdate();
+    //                 insertStmt.close();
+    //             }
 
-                selectStmt.close();
-            }
+    //             selectStmt.close();
+    //         }
 
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-        }
-    }
+    //     } catch (Exception e) {
+    //         System.err.println("Error: " + e.getMessage());
+    //     }
+    // }
 
     public void printAllCustomers() throws Exception {
         try (Connection conn = DbConnection.getConnection()) {
@@ -77,7 +77,6 @@ public class CustomerRepository {
             System.err.println("Error: " + e.getMessage());
         }
     }
-
 
     public List<CustomerDto> getAllCustomers() throws Exception {
         List<CustomerDto> customers = new ArrayList<>();
@@ -100,5 +99,48 @@ public class CustomerRepository {
         }
 
         return customers;
+    }
+
+    public void insertCustomers(List<CustomerDto> customers) {
+        if (customers == null || customers.isEmpty())
+            return;
+
+        try (Connection conn = DbConnection.getConnection()) {
+            final String sql = "INSERT INTO customers (cust_id, email, firstname, lastname) VALUES (?, ?, ?, ?)";
+
+            PreparedStatement stmt = conn.prepareStatement(sql);
+
+            for (CustomerDto customer : customers) {
+                stmt.setString(1, customer.getCustId());
+                stmt.setString(2, customer.getEmail());
+                stmt.setString(3, customer.getFirstname());
+                stmt.setString(4, customer.getLastname());
+                stmt.addBatch();
+            }
+            stmt.executeBatch();
+            stmt.close();
+        } catch (Exception e) {
+            System.err.println("Error: " + e.getMessage());
+        }
+    }
+
+    public void updateCustomers(List<CustomerDto> customers) {
+        if (customers == null || customers.isEmpty())
+            return;
+        try (Connection conn = DbConnection.getConnection()) {
+            final String sql = "UPDATE customers SET email = ?, firstname = ?, lastname = ? WHERE cust_id = ?";
+            PreparedStatement stmt = conn.prepareStatement(sql);
+            for (CustomerDto customer : customers) {
+                stmt.setString(1, customer.getEmail());
+                stmt.setString(2, customer.getFirstname());
+                stmt.setString(3, customer.getLastname());
+                stmt.setString(4, customer.getCustId());
+                stmt.addBatch();
+            }
+            stmt.executeBatch();
+            stmt.close();
+        } catch (Exception e) {
+            System.err.println("Error: " + e.getMessage());
+        }
     }
 }
