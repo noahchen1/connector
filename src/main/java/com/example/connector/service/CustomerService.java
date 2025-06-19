@@ -2,6 +2,7 @@ package com.example.connector.service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
@@ -25,6 +26,28 @@ public class CustomerService {
         customer.setLastname(item.getLastname());
 
         return customer;
+    }
+
+    private void runUpdate(
+            List<CustomerDto> sourceList,
+            List<CustomerDto> targetList,
+            Map<String, CustomerDto> targetMap,
+            Consumer<List<CustomerDto>> createFn,
+            Consumer<List<CustomerDto>> updateFn) {
+        List<CustomerDto> toInsert = new java.util.ArrayList<>();
+        List<CustomerDto> toUpdate = new java.util.ArrayList<>();
+
+        for (CustomerDto source : sourceList) {
+            CustomerDto target = targetMap.get(source.getCustId());
+            if (target == null) {
+                toInsert.add(source);
+            } else if (!source.equals(target)) {
+                toUpdate.add(source);
+            }
+        }
+
+        createFn.accept(toInsert);
+        updateFn.accept(toUpdate);
     }
 
     public void syncCustomers(String accessToken, NetsuiteCustomerClient netsuiteCustomerClient) throws Exception {
@@ -54,29 +77,12 @@ public class CustomerService {
                 .collect(Collectors.toMap(CustomerDto::getCustId, c -> c));
 
         // Collect for batch processing
-        List<CustomerDto> toInsert = new java.util.ArrayList<>();
-        List<CustomerDto> toUpdate = new java.util.ArrayList<>();
+        runUpdate(parsedNsCustomers, dbCustomers, dbMap, toInsert -> customerRepository.insertCustomers(toInsert),
+                toUpdate -> customerRepository.updateCustomers(toUpdate));
 
-        for (CustomerDto nsCustomer : parsedNsCustomers) {
-            CustomerDto dbCustomer = dbMap.get(nsCustomer.getCustId());
-            if (dbCustomer == null) {
-                toInsert.add(nsCustomer);
-            } else if (!nsCustomer.equals(dbCustomer)) {
-                toUpdate.add(nsCustomer);
-            }
-        }
-
-        customerRepository.insertCustomers(toInsert);
-        customerRepository.updateCustomers(toUpdate);
-
-        // NetSuite sync logic remains the same
-        for (CustomerDto dbCustomer : dbCustomers) {
-            CustomerDto nsCustomer = nsMap.get(dbCustomer.getCustId());
-            if (nsCustomer == null) {
-                netsuiteCustomerClient.createCustomer(accessToken, dbCustomer);
-            } else if (!dbCustomer.equals(nsCustomer)) {
-                netsuiteCustomerClient.updateCustomer(accessToken, dbCustomer);
-            }
-        }
+        runUpdate(dbCustomers, parsedNsCustomers, nsMap,
+                toInsert -> netsuiteCustomerClient.createCustomers(accessToken, toInsert),
+                toUpdate -> netsuiteCustomerClient.updateCustomers(accessToken, toUpdate));
     }
+
 }

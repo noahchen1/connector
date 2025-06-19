@@ -4,10 +4,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.HashMap;
 import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.example.connector.dto.CustomerDto;
 import com.example.connector.dto.CustomerResponseDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -66,5 +68,27 @@ public class NetsuiteCustomerClient {
         List<CustomerResponseDto.CustomerItem> customers = parsedResponse.getItems();
 
         return customers;
+    }
+
+    public void createCustomers(String accessToken, List<CustomerDto> customers) {
+        if (customers == null || customers.isEmpty()) return;
+
+        String url = "https://123456.suitetalk.api.netsuite.com/services/rest/record/v1/customer";
+        HttpClient client = HttpClient.newHttpClient();
+        ObjectMapper mapper = new ObjectMapper();
+
+        for (CustomerDto customer : customers) {
+            try {
+                String json = mapper.writeValueAsString(new HashMap<String, Object>() {{
+                    
+                }})
+            } catch (Exception e) {
+                // TODO: handle exception
+            }
+        }
+    }
+
+    public void updateCustomers(String accessToken, List<CustomerDto> customers) {
+
     }
 }
