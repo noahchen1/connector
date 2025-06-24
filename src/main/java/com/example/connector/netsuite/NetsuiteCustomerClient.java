@@ -71,19 +71,29 @@ public class NetsuiteCustomerClient {
     }
 
     public void createCustomers(String accessToken, List<CustomerDto> customers) {
-        if (customers == null || customers.isEmpty()) return;
+        if (customers == null || customers.isEmpty())
+            return;
 
+        System.out.println(customers);
+        
         String url = "https://123456.suitetalk.api.netsuite.com/services/rest/record/v1/customer";
         HttpClient client = HttpClient.newHttpClient();
         ObjectMapper mapper = new ObjectMapper();
 
         for (CustomerDto customer : customers) {
             try {
-                String json = mapper.writeValueAsString(new HashMap<String, Object>() {{
-                    
-                }})
+                String requestBody = mapper.writeValueAsString(customer);
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .header("Authorization", "Bearer " + accessToken)
+                        .header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                        .build();
+
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                System.out.println("Response for customer " + customer.getCustId() + ": " + response.body());
             } catch (Exception e) {
-                // TODO: handle exception
+                System.err.println("Error creating customer " + customer.getCustId() + ": " + e.getMessage());
             }
         }
     }
