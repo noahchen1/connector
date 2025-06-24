@@ -44,17 +44,20 @@ public class ConnectorApplication implements CommandLineRunner {
 
 			// customerService.syncCustomers(accessToken, netsuiteCustomerClient);
 
-			System.out.println("Access Token: " + accessToken);
 			CustomerDto customerDto = new CustomerDto();
 
+			customerDto.setCustId("CUST169708");
+			customerDto.setInternalId(378135);
+			customerDto.setEmail("nuoya1996@gmail.com");
 			customerDto.setFirstname("John");
 			customerDto.setLastname("Doe");
-			customerDto.setEmail("nuoya19960309@gmail.com");
+			customerDto.setSubsidiary(9);
 
 			List<CustomerDto> customerList = new ArrayList<>();
 			customerList.add(customerDto);
 
-			netsuiteCustomerClient.createCustomers(accessToken, customerList);
+			System.out.println(customerList);
+			netsuiteCustomerClient.updateCustomers(accessToken, customerList);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

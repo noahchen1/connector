@@ -1,10 +1,16 @@
 package com.example.connector.dto;
 
 public class CustomerDto {
+    private int internal_id;
     private String cust_id;
     private String email;
     private String firstname;
     private String lastname;
+    private int subsidiary;
+
+    public Integer getInternalId() {
+        return internal_id;
+    }
 
     public String getCustId() {
         return cust_id;
@@ -20,6 +26,14 @@ public class CustomerDto {
 
     public String getLastname() {
         return lastname;
+    }
+
+    public int getSubsidiary() {
+        return subsidiary;
+    }
+
+    public void setInternalId(int internal_id) {
+        this.internal_id = internal_id;
     }
 
     public void setCustId(String custId) {
@@ -38,10 +52,15 @@ public class CustomerDto {
         this.lastname = lastname;
     }
 
+    public void setSubsidiary(int subsidiary) {
+        this.subsidiary = subsidiary;
+    }
+
     @Override
     public String toString() {
         return "CustomerDTO{" +
-                "Cust_ID=" + cust_id +
+                "Internal_Id=" + internal_id +
+                ", Cust_ID=" + cust_id +
                 ", email=" + email +
                 ", firstname=" + firstname +
                 ", lastname=" + lastname +

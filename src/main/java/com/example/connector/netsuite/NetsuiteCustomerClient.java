@@ -75,8 +75,8 @@ public class NetsuiteCustomerClient {
             return;
 
         System.out.println(customers);
-        
-        String url = "https://123456.suitetalk.api.netsuite.com/services/rest/record/v1/customer";
+
+        String url = "https://5405357-sb1.suitetalk.api.netsuite.com/services/rest/record/v1/customer";
         HttpClient client = HttpClient.newHttpClient();
         ObjectMapper mapper = new ObjectMapper();
 
@@ -91,14 +91,59 @@ public class NetsuiteCustomerClient {
                         .build();
 
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-                System.out.println("Response for customer " + customer.getCustId() + ": " + response.body());
+                int statusCode = response.statusCode();
+
+                if (statusCode >= 200 && statusCode <= 300) {
+                    System.out.println("Customer " + customer.getFirstname() + " " + customer.getLastname()
+                            + " created succesfully.");
+                } else {
+                    System.err.println("Failed to create customer " + customer.getFirstname() + " "
+                            + customer.getLastname() + ". Status: " + statusCode);
+                }
             } catch (Exception e) {
-                System.err.println("Error creating customer " + customer.getCustId() + ": " + e.getMessage());
+                System.err.println("Error creating customer " + customer.getFirstname() + " " + customer.getLastname()
+                        + ": " + e.getMessage());
+                e.printStackTrace();
             }
         }
     }
 
     public void updateCustomers(String accessToken, List<CustomerDto> customers) {
+        if (customers == null || customers.isEmpty())
+            return;
 
+        String baseUrl = "https://5405357-sb1.suitetalk.api.netsuite.com/services/rest/record/v1/customer/";
+        HttpClient client = HttpClient.newHttpClient();
+        ObjectMapper mapper = new ObjectMapper();
+
+        for (CustomerDto customer : customers) {
+            try {
+                if (customer.getInternalId() == null) {
+                    System.err.println("Customer internal id is required for update.");
+                    continue;
+                }
+
+                String url = baseUrl + customer.getInternalId();
+                String requestBody = mapper.writeValueAsString(customer);
+
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .header("Authorization", "Bearer " + accessToken)
+                        .header("Content-Type", "application/json")
+                        .method("PATCH", HttpRequest.BodyPublishers.ofString(requestBody))
+                        .build();
+
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                int statusCode = response.statusCode();
+
+                System.out.println("PATCH payload: " + requestBody);
+                System.out.println("Status: " + statusCode);
+                System.out.println("resposne: " + response);
+            } catch (Exception e) {
+                // TODO: handle exception
+                System.err.println("Error creating customer");
+                e.printStackTrace();
+            }
+        }
     }
 }
