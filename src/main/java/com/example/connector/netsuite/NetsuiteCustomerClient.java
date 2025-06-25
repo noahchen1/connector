@@ -10,6 +10,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.example.connector.dto.CustomerDto;
+import com.example.connector.dto.CustomerItemDto;
 import com.example.connector.dto.CustomerResponseDto;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -38,34 +39,41 @@ public class NetsuiteCustomerClient {
         return body;
     }
 
-    public List<CustomerResponseDto.CustomerItem> getCustomers(String accessToken) throws Exception {
-        final String query = """
-                {
-                    "q": "SELECT top(10) BUILTIN.DF(entity.id) AS cust_id, \
-                    entity.firstname AS firstname, \
-                    entity.lastname AS lastname, \
-                    entity.email AS email \
-                    FROM entity \
-                    JOIN customer ON customer.id = entity.id \
-                    WHERE EXTRACT(MONTH FROM TO_DATE(entity.datecreated, 'MM/DD/YYYY')) = EXTRACT(MONTH FROM CURRENT_DATE) \
-                    AND EXTRACT(YEAR FROM TO_DATE(entity.datecreated, 'MM/DD/YYYY')) = EXTRACT(YEAR FROM CURRENT_DATE)"
-                }
+    public List<CustomerItemDto> getCustomers(String accessToken) throws Exception {
+        final String url = "https://5405357-sb1.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql";
+        final String queryStr = """
+                    SELECT TOP(10)
+                        customer.id AS internalId,
+                        customer.entityId AS custId,
+                        customer.lastName AS lastname,
+                        customer.firstName AS firstname,
+                        customer.email AS email,
+                        CustomerSubsidiaryRelationship.subsidiary AS subsidiary,
+                        entityAddress.addrText AS address
+                    FROM
+                        customer
+                        LEFT JOIN CustomerSubsidiaryRelationship ON Customer.ID = CustomerSubsidiaryRelationship.entity
+                            AND CustomerSubsidiaryRelationship.isprimarysub = 'T'
+                        LEFT JOIN entityAddressbook ON entityAddressbook.entity = customer.id
+                            AND entityAddressbook.defaultbilling = 'T'
+                        LEFT JOIN entityAddress ON entityAddress.nkey = entityAddressbook.AddressBookAddress
+                        LEFT JOIN employee ON employee.id = customer.salesrep
                 """;
+        final String formmatedQuery = String.format("{\"q\": \"%s\"}", queryStr.replaceAll("\\s+", " ").trim());
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://5405357-sb1.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql"))
+                .uri(URI.create(url))
                 .header("Authorization", "Bearer " + accessToken)
                 .header("Content-Type", "application/json")
                 .header("Prefer", "transient")
-                .POST(HttpRequest.BodyPublishers.ofString(query))
+                .POST(HttpRequest.BodyPublishers.ofString(formmatedQuery))
                 .build();
 
         HttpClient client = HttpClient.newHttpClient();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-
         ObjectMapper mapper = new ObjectMapper();
         CustomerResponseDto parsedResponse = mapper.readValue(response.body(), CustomerResponseDto.class);
-        List<CustomerResponseDto.CustomerItem> customers = parsedResponse.getItems();
+        List<CustomerItemDto> customers = parsedResponse.getItems();
 
         return customers;
     }
@@ -73,8 +81,6 @@ public class NetsuiteCustomerClient {
     public void createCustomers(String accessToken, List<CustomerDto> customers) {
         if (customers == null || customers.isEmpty())
             return;
-
-        System.out.println(customers);
 
         String url = "https://5405357-sb1.suitetalk.api.netsuite.com/services/rest/record/v1/customer";
         HttpClient client = HttpClient.newHttpClient();
@@ -117,6 +123,7 @@ public class NetsuiteCustomerClient {
         ObjectMapper mapper = new ObjectMapper();
 
         for (CustomerDto customer : customers) {
+            System.out.println(customer);
             try {
                 if (customer.getInternalId() == null) {
                     System.err.println("Customer internal id is required for update.");
@@ -138,7 +145,32 @@ public class NetsuiteCustomerClient {
 
                 System.out.println("PATCH payload: " + requestBody);
                 System.out.println("Status: " + statusCode);
-                System.out.println("resposne: " + response);
+
+                // if (statusCode < 200 || statusCode >= 300) {
+                //     // Parse and print error details
+                //     String responseBody = response.body();
+                //     System.err.println("Error response: " + responseBody);
+                //     try {
+                //         ObjectMapper errorMapper = new ObjectMapper();
+                //         com.fasterxml.jackson.databind.JsonNode root = errorMapper.readTree(responseBody);
+                //         if (root.has("o:errorDetails")) {
+                //             for (com.fasterxml.jackson.databind.JsonNode detail : root.get("o:errorDetails")) {
+                //                 String msg = detail.has("detail") ? detail.get("detail").asText() : "";
+                //                 String code = detail.has("o:errorCode") ? detail.get("o:errorCode").asText() : "";
+                //                 String path = detail.has("o:errorPath") ? detail.get("o:errorPath").asText() : "";
+                //                 System.err.println("Detail: " + msg);
+                //                 System.err.println("Error Code: " + code);
+                //                 if (!path.isEmpty()) {
+                //                     System.err.println("Error Path: " + path);
+                //                 }
+                //             }
+                //         }
+                //     } catch (Exception parseEx) {
+                //         System.err.println("Failed to parse error details: " + parseEx.getMessage());
+                //     }
+                // } else {
+                //     System.out.println("resposne: " + response.body());
+                // }
             } catch (Exception e) {
                 // TODO: handle exception
                 System.err.println("Error creating customer");

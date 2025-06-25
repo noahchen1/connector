@@ -34,5 +34,6 @@ build/
 
 ### Secret ###
 private.pem
+default.pem
 
 .env

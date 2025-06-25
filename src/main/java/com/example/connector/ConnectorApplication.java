@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
 import com.example.connector.dto.CustomerDto;
+import com.example.connector.dto.CustomerItemDto;
 import com.example.connector.dto.TokenResponseDto;
 import com.example.connector.netsuite.NetsuiteAuthClient;
 import com.example.connector.netsuite.NetsuiteCustomerClient;
@@ -44,20 +45,22 @@ public class ConnectorApplication implements CommandLineRunner {
 
 			// customerService.syncCustomers(accessToken, netsuiteCustomerClient);
 
-			CustomerDto customerDto = new CustomerDto();
+			// CustomerDto customerDto = new CustomerDto();
 
-			customerDto.setCustId("CUST169708");
-			customerDto.setInternalId(378135);
-			customerDto.setEmail("nuoya1996@gmail.com");
-			customerDto.setFirstname("John");
-			customerDto.setLastname("Doe");
-			customerDto.setSubsidiary(9);
+			// customerDto.setCustId("CUST169708");
+			// customerDto.setInternalId(378135);
+			// customerDto.setEmail("nuoya1996@gmail.com");
+			// customerDto.setFirstname("John");
+			// customerDto.setLastname("Doe");
+			// customerDto.setSubsidiary(9);
 
-			List<CustomerDto> customerList = new ArrayList<>();
-			customerList.add(customerDto);
+			// List<CustomerDto> customerList = new ArrayList<>();
+			// customerList.add(customerDto);
 
-			System.out.println(customerList);
-			netsuiteCustomerClient.updateCustomers(accessToken, customerList);
+			// System.out.println(customerList);
+			// netsuiteCustomerClient.updateCustomers(accessToken, customerList);
+
+			customerService.syncCustomers(accessToken, netsuiteCustomerClient);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -68,4 +71,6 @@ public class ConnectorApplication implements CommandLineRunner {
 	}
 }
 
-// ssh -i /d/repo/default.pem -L 15432:<rds-endpoint>:5432 ec2-user@54.197.108.8
+// ssh -i /d/repo/default.pem -L
+// 15432:database-1.c8522k8ughqc.us-east-1.rds.amazonaws.com:5432
+// ec2-user@54.197.108.8
