@@ -12,6 +12,7 @@ import org.springframework.stereotype.Component;
 import com.example.connector.dto.CustomerDto;
 import com.example.connector.dto.CustomerItemDto;
 import com.example.connector.dto.CustomerResponseDto;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
@@ -58,6 +59,8 @@ public class NetsuiteCustomerClient {
                             AND entityAddressbook.defaultbilling = 'T'
                         LEFT JOIN entityAddress ON entityAddress.nkey = entityAddressbook.AddressBookAddress
                         LEFT JOIN employee ON employee.id = customer.salesrep
+                    ORDER BY
+	                    customer.datecreated DESC
                 """;
         final String formmatedQuery = String.format("{\"q\": \"%s\"}", queryStr.replaceAll("\\s+", " ").trim());
 
@@ -103,8 +106,30 @@ public class NetsuiteCustomerClient {
                     System.out.println("Customer " + customer.getFirstname() + " " + customer.getLastname()
                             + " created succesfully.");
                 } else {
-                    System.err.println("Failed to create customer " + customer.getFirstname() + " "
-                            + customer.getLastname() + ". Status: " + statusCode);
+                    // System.err.println("Failed to create customer " + customer.getFirstname() + "
+                    // "
+                    // + customer.getLastname() + ". Status: " + statusCode);
+                    String responseBody = response.body();
+                    try {
+                        ObjectMapper errorMapper = new ObjectMapper();
+                        JsonNode root = errorMapper.readTree(responseBody);
+
+                        if (root.has("o:errorDetails")) {
+                            for (JsonNode detail : root.get("o:errorDetails")) {
+                                String msg = detail.has("detail") ? detail.get("detail").asText() : "";
+                                String code = detail.has("o:errorCode") ? detail.get("o:errorCode").asText() : "";
+                                String path = detail.has("o:errorPath") ? detail.get("o:errorPath").asText() : "";
+                                System.err.println("Detail: " + msg);
+                                System.err.println("Error code: " + code);
+
+                                if (!path.isEmpty()) {
+                                    System.err.println("Error Path: " + path);
+                                }
+                            }
+                        }
+                    } catch (Exception parseEx) {
+                        System.err.println("Failed to parse error details: " + parseEx.getMessage());
+                    }
                 }
             } catch (Exception e) {
                 System.err.println("Error creating customer " + customer.getFirstname() + " " + customer.getLastname()
@@ -147,29 +172,33 @@ public class NetsuiteCustomerClient {
                 System.out.println("Status: " + statusCode);
 
                 // if (statusCode < 200 || statusCode >= 300) {
-                //     // Parse and print error details
-                //     String responseBody = response.body();
-                //     System.err.println("Error response: " + responseBody);
-                //     try {
-                //         ObjectMapper errorMapper = new ObjectMapper();
-                //         com.fasterxml.jackson.databind.JsonNode root = errorMapper.readTree(responseBody);
-                //         if (root.has("o:errorDetails")) {
-                //             for (com.fasterxml.jackson.databind.JsonNode detail : root.get("o:errorDetails")) {
-                //                 String msg = detail.has("detail") ? detail.get("detail").asText() : "";
-                //                 String code = detail.has("o:errorCode") ? detail.get("o:errorCode").asText() : "";
-                //                 String path = detail.has("o:errorPath") ? detail.get("o:errorPath").asText() : "";
-                //                 System.err.println("Detail: " + msg);
-                //                 System.err.println("Error Code: " + code);
-                //                 if (!path.isEmpty()) {
-                //                     System.err.println("Error Path: " + path);
-                //                 }
-                //             }
-                //         }
-                //     } catch (Exception parseEx) {
-                //         System.err.println("Failed to parse error details: " + parseEx.getMessage());
-                //     }
+                // // Parse and print error details
+                // String responseBody = response.body();
+                // System.err.println("Error response: " + responseBody);
+                // try {
+                // ObjectMapper errorMapper = new ObjectMapper();
+                // com.fasterxml.jackson.databind.JsonNode root =
+                // errorMapper.readTree(responseBody);
+                // if (root.has("o:errorDetails")) {
+                // for (com.fasterxml.jackson.databind.JsonNode detail :
+                // root.get("o:errorDetails")) {
+                // String msg = detail.has("detail") ? detail.get("detail").asText() : "";
+                // String code = detail.has("o:errorCode") ? detail.get("o:errorCode").asText()
+                // : "";
+                // String path = detail.has("o:errorPath") ? detail.get("o:errorPath").asText()
+                // : "";
+                // System.err.println("Detail: " + msg);
+                // System.err.println("Error Code: " + code);
+                // if (!path.isEmpty()) {
+                // System.err.println("Error Path: " + path);
+                // }
+                // }
+                // }
+                // } catch (Exception parseEx) {
+                // System.err.println("Failed to parse error details: " + parseEx.getMessage());
+                // }
                 // } else {
-                //     System.out.println("resposne: " + response.body());
+                // System.out.println("resposne: " + response.body());
                 // }
             } catch (Exception e) {
                 // TODO: handle exception

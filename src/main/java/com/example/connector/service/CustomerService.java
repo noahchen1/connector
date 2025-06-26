@@ -72,7 +72,7 @@ public class CustomerService {
 
         runUpdate(dbCustomers, parsedNsCustomers, nsMap,
                 toInsert -> netsuiteCustomerClient.createCustomers(accessToken, toInsert),
-                toUpdate -> netsuiteCustomerClient.updateCustomers(accessToken, toUpdate));
+                toUpdate -> {});
     }
 
 }

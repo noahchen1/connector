@@ -112,11 +112,13 @@ public class CustomerRepository {
         if (customers == null || customers.isEmpty())
             return;
 
+        int[] results = null;
         try (Connection conn = DbConnection.getConnection()) {
             final String sql = "INSERT INTO customers (internal_id, cust_id, email, firstname, lastname, subsidiary, address) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
             PreparedStatement stmt = conn.prepareStatement(sql);
 
+            int idx = 0;
             for (CustomerDto customer : customers) {
                 stmt.setInt(1, customer.getInternalId());
                 stmt.setString(2, customer.getCustId());
@@ -128,7 +130,19 @@ public class CustomerRepository {
                 stmt.addBatch();
             }
 
-            stmt.executeBatch();
+            results = stmt.executeBatch();
+
+            for (CustomerDto customer : customers) {
+                int result = results != null && idx < results.length ? results[idx] : 0;
+
+                if (result >= 0) {
+                    System.out.println("Created customer: custId=" + customer.getCustId()
+                            + ", firstname=" + customer.getFirstname()
+                            + ", lastname=" + customer.getLastname());
+                }
+                idx++;
+            }
+
             stmt.close();
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
@@ -136,9 +150,11 @@ public class CustomerRepository {
     }
 
     public void updateCustomers(List<CustomerDto> customers) {
-        System.out.println("customer to update: " + customers);
         if (customers == null || customers.isEmpty())
             return;
+
+        int[] results = null;
+        int idx = 0;
         try (Connection conn = DbConnection.getConnection()) {
             final String sql = "UPDATE customers SET cust_id = ?, email = ?, firstname = ?, lastname = ?, subsidiary = ?, address = ? WHERE internal_id = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
@@ -152,7 +168,18 @@ public class CustomerRepository {
                 stmt.setInt(7, customer.getInternalId());
                 stmt.addBatch();
             }
-            stmt.executeBatch();
+
+            results = stmt.executeBatch();
+            idx = 0;
+            for (CustomerDto customer : customers) {
+                int result = results != null && idx < results.length ? results[idx] : 0;
+                if (result >= 0) {
+                    System.out.println("Updated customer: custId=" + customer.getCustId()
+                            + ", firstname=" + customer.getFirstname()
+                            + ", lastname=" + customer.getLastname());
+                }
+                idx++;
+            }
             stmt.close();
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
