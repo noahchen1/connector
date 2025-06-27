@@ -2,6 +2,7 @@ package com.example.connector.dto;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class CustomerDto {

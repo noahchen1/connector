@@ -4,11 +4,13 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.sql.PreparedStatement;
 import java.util.HashMap;
 import java.util.List;
 
 import org.springframework.stereotype.Component;
 
+import com.example.connector.aws.DbConnection;
 import com.example.connector.dto.CustomerDto;
 import com.example.connector.dto.CustomerItemDto;
 import com.example.connector.dto.CustomerResponseDto;
@@ -60,7 +62,7 @@ public class NetsuiteCustomerClient {
                         LEFT JOIN entityAddress ON entityAddress.nkey = entityAddressbook.AddressBookAddress
                         LEFT JOIN employee ON employee.id = customer.salesrep
                     ORDER BY
-	                    customer.datecreated DESC
+                     customer.datecreated DESC
                 """;
         final String formmatedQuery = String.format("{\"q\": \"%s\"}", queryStr.replaceAll("\\s+", " ").trim());
 
@@ -88,7 +90,7 @@ public class NetsuiteCustomerClient {
         String url = "https://5405357-sb1.suitetalk.api.netsuite.com/services/rest/record/v1/customer";
         HttpClient client = HttpClient.newHttpClient();
         ObjectMapper mapper = new ObjectMapper();
-
+        System.out.println("Ns customer to create: " + customers);
         for (CustomerDto customer : customers) {
             try {
                 String requestBody = mapper.writeValueAsString(customer);
@@ -105,6 +107,23 @@ public class NetsuiteCustomerClient {
                 if (statusCode >= 200 && statusCode <= 300) {
                     System.out.println("Customer " + customer.getFirstname() + " " + customer.getLastname()
                             + " created succesfully.");
+
+                    String location = response.headers().firstValue("location").orElse(null);
+
+                    if (location != null) {
+                        System.out.println("Location header: " + location);
+                        String[] parts = location.split("/");
+                        String internalId = parts[parts.length - 1];
+
+                        // String updateSql = "UPDATE customers SET internal_id = ?, cust_id = ? WHERE email = ?";
+                        // try (Connection conn = DbConnection.getConnection();
+                        //         PreparedStatement stmt = conn.prepareStatement(updateSql)) {
+                        //     stmt.setInt(1, nsInternalId);
+                        //     stmt.setString(2, nsCustId);
+                        //     stmt.setString(3, customer.getEmail()); // or use your local PK
+                        //     stmt.executeUpdate();
+                        // }
+                    }
                 } else {
                     // System.err.println("Failed to create customer " + customer.getFirstname() + "
                     // "
