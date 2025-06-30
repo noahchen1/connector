@@ -7,10 +7,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.springframework.stereotype.Repository;
+
 import com.example.connector.aws.DbConnection;
 import com.example.connector.dto.CustomerDto;
 import com.example.connector.dto.CustomerResponseDto;
 
+@Repository
 public class CustomerRepository {
     // public void updateCustomers(List<CustomerResponseDto.CustomerItem> customers)
     // throws Exception {
@@ -86,7 +89,7 @@ public class CustomerRepository {
         List<CustomerDto> customers = new ArrayList<>();
 
         try (Connection conn = DbConnection.getConnection()) {
-            String sql = "SELECT internal_id, cust_id, email, firstname, lastname, subsidiary, address FROM customers";
+            String sql = "SELECT internal_id, cust_id, email, firstname, lastname, subsidiary, address, id FROM customers";
             PreparedStatement stmt = conn.prepareStatement(sql);
             ResultSet rs = stmt.executeQuery();
 
@@ -99,6 +102,7 @@ public class CustomerRepository {
                 customer.setLastname(rs.getString("lastname"));
                 customer.setSubsidiary(rs.getInt("subsidiary"));
                 customer.setAddress(rs.getString("address"));
+                customer.setId(rs.getInt("id"));
                 customers.add(customer);
             }
         } catch (Exception e) {
@@ -177,6 +181,47 @@ public class CustomerRepository {
                     System.out.println("Updated customer: custId=" + customer.getCustId()
                             + ", firstname=" + customer.getFirstname()
                             + ", lastname=" + customer.getLastname());
+                }
+                idx++;
+            }
+            stmt.close();
+        } catch (Exception e) {
+            System.err.println("Error: " + e.getMessage());
+        }
+    }
+
+    public void updateCustomersById(List<CustomerDto> customers) {
+        if (customers == null || customers.isEmpty())
+            return;
+
+        int[] results = null;
+        int idx = 0;
+
+        try (Connection conn = DbConnection.getConnection()) {
+            final String sql = "UPDATE customers SET internal_id = ?, cust_id = ?, email = ?, firstname = ?, lastname = ?, subsidiary = ?, address = ? WHERE id = ?";
+
+            PreparedStatement stmt = conn.prepareStatement(sql);
+
+            for (CustomerDto customer : customers) {
+                stmt.setInt(1, customer.getInternalId());
+                stmt.setString(2, customer.getCustId());
+                stmt.setString(3, customer.getEmail());
+                stmt.setString(4, customer.getFirstname());
+                stmt.setString(5, customer.getLastname());
+                stmt.setInt(6, customer.getSubsidiary());
+                stmt.setString(7, customer.getAddress());
+                stmt.setInt(8, customer.getId());
+                stmt.addBatch();
+            }
+
+            results = stmt.executeBatch();
+            idx = 0;
+            for (CustomerDto customer : customers) {
+                int result = results != null && idx < results.length ? results[idx] : 0;
+                if (result >= 0) {
+                    System.out.println("Updated customer by id: id=" + customer.getId()
+                            + ", internalId=" + customer.getInternalId()
+                            + ", custId=" + customer.getCustId());
                 }
                 idx++;
             }

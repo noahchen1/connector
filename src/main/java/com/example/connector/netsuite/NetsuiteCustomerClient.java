@@ -5,20 +5,30 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.sql.PreparedStatement;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.example.connector.aws.DbConnection;
 import com.example.connector.dto.CustomerDto;
 import com.example.connector.dto.CustomerItemDto;
 import com.example.connector.dto.CustomerResponseDto;
+import com.example.connector.repository.CustomerRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Component
 public class NetsuiteCustomerClient {
+    private CustomerRepository customerRepository;
+
+    @Autowired
+    public NetsuiteCustomerClient(CustomerRepository customerRepository) {
+        this.customerRepository = customerRepository;
+    }
+
     public String getCustomerEmail(String accessToken, String customerId) throws Exception {
         String url = "https://5405357-sb1.suitetalk.api.netsuite.com/services/rest/record/v1/customer/"
                 + customerId + "?fields=email,entityId";
@@ -90,7 +100,10 @@ public class NetsuiteCustomerClient {
         String url = "https://5405357-sb1.suitetalk.api.netsuite.com/services/rest/record/v1/customer";
         HttpClient client = HttpClient.newHttpClient();
         ObjectMapper mapper = new ObjectMapper();
+        List<CustomerDto> updatedCustomers = new ArrayList<>();
+
         System.out.println("Ns customer to create: " + customers);
+
         for (CustomerDto customer : customers) {
             try {
                 String requestBody = mapper.writeValueAsString(customer);
@@ -110,19 +123,17 @@ public class NetsuiteCustomerClient {
 
                     String location = response.headers().firstValue("location").orElse(null);
 
+                    System.out.println("location: " + location);
+
                     if (location != null) {
                         System.out.println("Location header: " + location);
                         String[] parts = location.split("/");
                         String internalId = parts[parts.length - 1];
 
-                        // String updateSql = "UPDATE customers SET internal_id = ?, cust_id = ? WHERE email = ?";
-                        // try (Connection conn = DbConnection.getConnection();
-                        //         PreparedStatement stmt = conn.prepareStatement(updateSql)) {
-                        //     stmt.setInt(1, nsInternalId);
-                        //     stmt.setString(2, nsCustId);
-                        //     stmt.setString(3, customer.getEmail()); // or use your local PK
-                        //     stmt.executeUpdate();
-                        // }
+                        System.out.println("internalid: " + internalId);
+
+                        customer.setInternalId(Integer.parseInt(internalId));
+                        updatedCustomers.add(customer);
                     }
                 } else {
                     // System.err.println("Failed to create customer " + customer.getFirstname() + "
@@ -155,6 +166,11 @@ public class NetsuiteCustomerClient {
                         + ": " + e.getMessage());
                 e.printStackTrace();
             }
+        }
+
+        if (!updatedCustomers.isEmpty()) {
+            System.out.println(updatedCustomers);
+            customerRepository.updateCustomersById(updatedCustomers);
         }
     }
 
@@ -227,3 +243,5 @@ public class NetsuiteCustomerClient {
         }
     }
 }
+
+// TERM"},"unbilledOrders":0.0}

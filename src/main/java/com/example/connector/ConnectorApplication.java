@@ -61,6 +61,7 @@ public class ConnectorApplication implements CommandLineRunner {
 			// netsuiteCustomerClient.updateCustomers(accessToken, customerList);
 
 			customerService.syncCustomers(accessToken, netsuiteCustomerClient);
+			System.out.println("process finished!");
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

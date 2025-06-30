@@ -11,11 +11,13 @@ public class CustomerDto {
 
     @JsonProperty("custid")
     private String custId;
+
     private String email;
     private String firstname;
     private String lastname;
     private String address;
     private int subsidiary;
+    private int rowId;
 
     public Integer getInternalId() {
         return internalId;
@@ -43,6 +45,10 @@ public class CustomerDto {
 
     public String getAddress() {
         return address;
+    }
+
+    public int getId() {
+        return rowId;
     }
 
     public void setInternalId(int internal_id) {
@@ -73,6 +79,10 @@ public class CustomerDto {
         this.address = address;
     }
 
+    public void setId(int rowId) {
+        this.rowId = rowId;
+    }
+
     @Override
     public String toString() {
         return "CustomerDTO{" +
@@ -81,6 +91,8 @@ public class CustomerDto {
                 ", email=" + email +
                 ", firstname=" + firstname +
                 ", lastname=" + lastname +
+                ", subsidiary=" + subsidiary +
+                ", rowId=" + rowId +
                 '}';
     }
 
@@ -91,7 +103,7 @@ public class CustomerDto {
         if (o == null || getClass() != o.getClass())
             return false;
         CustomerDto that = (CustomerDto) o;
-        
+
         return internalId == that.internalId &&
                 subsidiary == that.subsidiary &&
                 Objects.equals(custId, that.custId) &&
