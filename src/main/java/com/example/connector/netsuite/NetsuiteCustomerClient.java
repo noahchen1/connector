@@ -55,24 +55,26 @@ public class NetsuiteCustomerClient {
     public List<CustomerItemDto> getCustomers(String accessToken) throws Exception {
         final String url = "https://5405357-sb1.suitetalk.api.netsuite.com/services/rest/query/v1/suiteql";
         final String queryStr = """
-                    SELECT TOP(10)
-                        customer.id AS internalId,
-                        customer.entityId AS custId,
-                        customer.lastName AS lastname,
-                        customer.firstName AS firstname,
-                        customer.email AS email,
-                        CustomerSubsidiaryRelationship.subsidiary AS subsidiary,
-                        entityAddress.addrText AS address
+                    SELECT
+                    customer.id AS internalId,
+                    customer.entityId AS custId,
+                    customer.lastName AS lastname,
+                    customer.firstName AS firstname,
+                    customer.email AS email,
+                    CustomerSubsidiaryRelationship.subsidiary AS subsidiary,
+                    entityAddress.addrText AS address
                     FROM
-                        customer
-                        LEFT JOIN CustomerSubsidiaryRelationship ON Customer.ID = CustomerSubsidiaryRelationship.entity
-                            AND CustomerSubsidiaryRelationship.isprimarysub = 'T'
-                        LEFT JOIN entityAddressbook ON entityAddressbook.entity = customer.id
-                            AND entityAddressbook.defaultbilling = 'T'
-                        LEFT JOIN entityAddress ON entityAddress.nkey = entityAddressbook.AddressBookAddress
-                        LEFT JOIN employee ON employee.id = customer.salesrep
+                    customer
+                    LEFT JOIN CustomerSubsidiaryRelationship ON Customer.ID = CustomerSubsidiaryRelationship.entity
+                    AND CustomerSubsidiaryRelationship.isprimarysub = 'T'
+                    LEFT JOIN entityAddressbook ON entityAddressbook.entity = customer.id
+                    AND entityAddressbook.defaultbilling = 'T'
+                    LEFT JOIN entityAddress ON entityAddress.nkey = entityAddressbook.AddressBookAddress
+                    LEFT JOIN employee ON employee.id = customer.salesrep
+                    WHERE
+                    TO_DATE (customer.datecreated, 'MM-DD-YYYY') BETWEEN '06-13-2025' AND TO_DATE  (SYSDATE, 'MM-DD-YYYY')
                     ORDER BY
-                     customer.datecreated DESC
+                    customer.datecreated DESC
                 """;
         final String formmatedQuery = String.format("{\"q\": \"%s\"}", queryStr.replaceAll("\\s+", " ").trim());
 
