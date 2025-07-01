@@ -14,65 +14,74 @@ import com.example.connector.repository.CustomerRepository;
 
 @Service
 public class CustomerService {
-    private final CustomerRepository customerRepository = new CustomerRepository();
+        private final CustomerRepository customerRepository = new CustomerRepository();
 
-    private CustomerDto toCustomerDto(CustomerItemDto item) {
-        CustomerDto customer = new CustomerDto();
+        private CustomerDto toCustomerDto(CustomerItemDto item) {
+                CustomerDto customer = new CustomerDto();
 
-        customer.setInternalId(item.getInternalId());
-        customer.setCustId(item.getCustId());
-        customer.setEmail(item.getEmail());
-        customer.setFirstname(item.getFirstname());
-        customer.setLastname(item.getLastname());
-        customer.setSubsidiary(item.getSubsidiary());
-        customer.setAddress(item.getAddress());
+                customer.setInternalId(item.getInternalId());
+                customer.setCustId(item.getCustId());
+                customer.setEmail(item.getEmail());
+                customer.setFirstname(item.getFirstname());
+                customer.setLastname(item.getLastname());
+                customer.setSubsidiary(item.getSubsidiary());
+                customer.setAddress(item.getAddress());
 
-        return customer;
-    }
-
-    private void runUpdate(
-            List<CustomerDto> sourceList,
-            List<CustomerDto> targetList,
-            Map<Integer, CustomerDto> targetMap,
-            Consumer<List<CustomerDto>> createFn,
-            Consumer<List<CustomerDto>> updateFn) {
-        List<CustomerDto> toInsert = new java.util.ArrayList<>();
-        List<CustomerDto> toUpdate = new java.util.ArrayList<>();
-
-        for (CustomerDto source : sourceList) {
-            CustomerDto target = targetMap.get(source.getInternalId());
-            if (target == null) {
-                toInsert.add(source);
-            } else if (!source.equals(target)) {
-                toUpdate.add(source);
-            }
+                return customer;
         }
 
-        createFn.accept(toInsert);
-        updateFn.accept(toUpdate);
-    }
+        private void runUpdate(
+                        List<CustomerDto> sourceList,
+                        List<CustomerDto> targetList,
+                        Map<Integer, CustomerDto> targetMap,
+                        Consumer<List<CustomerDto>> createFn,
+                        Consumer<List<CustomerDto>> updateFn) {
+                List<CustomerDto> toInsert = new java.util.ArrayList<>();
+                List<CustomerDto> toUpdate = new java.util.ArrayList<>();
 
-    public void syncCustomers(String accessToken, NetsuiteCustomerClient netsuiteCustomerClient) throws Exception {
-        List<CustomerItemDto> nsCustomers = netsuiteCustomerClient.getCustomers(accessToken);
-        List<CustomerDto> dbCustomers = customerRepository.getAllCustomers();
+                for (CustomerDto source : sourceList) {
+                        CustomerDto target = targetMap.get(source.getInternalId());
+                        if (target == null) {
+                                toInsert.add(source);
+                        } else if (!source.equals(target)) {
+                                toUpdate.add(source);
+                        }
+                }
 
-        List<CustomerDto> parsedNsCustomers = nsCustomers.stream()
-                .map(this::toCustomerDto)
-                .collect(Collectors.toList());
+                createFn.accept(toInsert);
+                updateFn.accept(toUpdate);
+        }
 
-        Map<Integer, CustomerDto> nsMap = parsedNsCustomers.stream()
-                .collect(Collectors.toMap(CustomerDto::getInternalId, c -> c));
+        public void syncCustomers(String accessToken, NetsuiteCustomerClient netsuiteCustomerClient) throws Exception {
+                List<CustomerItemDto> nsCustomers = netsuiteCustomerClient.getCustomers(accessToken);
+                List<CustomerDto> dbCustomers = customerRepository.getAllCustomers();
 
-        Map<Integer, CustomerDto> dbMap = dbCustomers.stream()
-                .collect(Collectors.toMap(CustomerDto::getInternalId, c -> c));
+                List<CustomerDto> parsedNsCustomers = nsCustomers.stream()
+                                .map(this::toCustomerDto)
+                                .collect(Collectors.toList());
 
-        // Collect for batch processing
-        runUpdate(parsedNsCustomers, dbCustomers, dbMap, toInsert -> customerRepository.insertCustomers(toInsert),
-                toUpdate -> customerRepository.updateCustomers(toUpdate));
+                Map<Integer, CustomerDto> nsMap = parsedNsCustomers.stream()
+                                .collect(Collectors.toMap(CustomerDto::getInternalId, c -> c));
 
-        runUpdate(dbCustomers, parsedNsCustomers, nsMap,
-                toInsert -> netsuiteCustomerClient.createCustomers(accessToken, toInsert),
-                toUpdate -> {});
-    }
+                Map<Integer, CustomerDto> dbMap = dbCustomers.stream()
+                                .collect(Collectors.toMap(CustomerDto::getInternalId, c -> c));
 
+                runUpdate(parsedNsCustomers, dbCustomers, dbMap,
+                                toInsert -> customerRepository.insertCustomers(toInsert),
+                                toUpdate -> customerRepository.updateCustomers(toUpdate));
+
+                runUpdate(dbCustomers, parsedNsCustomers, nsMap,
+                                toInsert -> netsuiteCustomerClient.createCustomers(accessToken, toInsert),
+                                toUpdate -> {
+                                });
+
+                List<CustomerDto> toDelete = dbCustomers.stream()
+                                .filter(c -> nsMap.get(c.getInternalId()) == null)
+                                .collect(Collectors.toList());
+
+                System.out.println("Customers to delete: " + toDelete);
+
+                if (!toDelete.isEmpty())
+                        customerRepository.deleteCustomers(toDelete);
+        }
 }

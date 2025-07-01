@@ -230,4 +230,39 @@ public class CustomerRepository {
             System.err.println("Error: " + e.getMessage());
         }
     }
+
+    public void deleteCustomers(List<CustomerDto> customers) {
+        if (customers == null || customers.isEmpty())
+            return;
+
+        int[] results;
+        int idx = 0;
+
+        try (Connection conn = DbConnection.getConnection()) {
+            final String sql = "DELETE FROM customers WHERE internal_id = ?";
+
+            PreparedStatement stmt = conn.prepareStatement(sql);
+
+            for (CustomerDto customer : customers) {
+                stmt.setInt(1, customer.getInternalId());
+                stmt.addBatch();
+            }
+
+            results = stmt.executeBatch();
+
+            for (CustomerDto customer : customers) {
+                int result = results != null && idx < results.length ? results[idx] : 0;
+
+                if (result >= 0) {
+                    System.out.println("Deleted customer with internal id=" + customer.getInternalId() + ", custId="
+                            + customer.getCustId() + " " + customer.getFirstname() + " " + customer.getLastname());
+                }
+
+                idx++;
+            }
+
+        } catch (Exception e) {
+            System.err.println("Error: " + e.getMessage());
+        }
+    }
 }

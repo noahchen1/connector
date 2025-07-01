@@ -104,9 +104,9 @@ public class NetsuiteCustomerClient {
         ObjectMapper mapper = new ObjectMapper();
         List<CustomerDto> updatedCustomers = new ArrayList<>();
 
-        System.out.println("Ns customer to create: " + customers);
-
         for (CustomerDto customer : customers) {
+            if (customer.getInternalId() != null) continue;
+
             try {
                 String requestBody = mapper.writeValueAsString(customer);
                 HttpRequest request = HttpRequest.newBuilder()
