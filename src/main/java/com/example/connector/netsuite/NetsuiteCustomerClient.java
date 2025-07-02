@@ -4,15 +4,12 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.sql.PreparedStatement;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.example.connector.aws.DbConnection;
 import com.example.connector.dto.CustomerDto;
 import com.example.connector.dto.CustomerItemDto;
 import com.example.connector.dto.CustomerResponseDto;
@@ -241,6 +238,47 @@ public class NetsuiteCustomerClient {
             } catch (Exception e) {
                 // TODO: handle exception
                 System.err.println("Error creating customer");
+                e.printStackTrace();
+            }
+        }
+    }
+
+    public void deleteCustomers(String accessToken, List<CustomerDto> customers) {
+        if (customers == null || customers.isEmpty())
+            return;
+
+        String baseUrl = "https://5405357-sb1.suitetalk.api.netsuite.com/services/rest/record/v1/customer/";
+        HttpClient client = HttpClient.newHttpClient();
+
+        for (CustomerDto customer : customers) {
+            if (customer.getInternalId() == null) {
+                System.err.println("Customer internal id is required for delete.");
+                continue;
+            }
+
+            String url = baseUrl + customer.getInternalId();
+
+            try {
+                HttpRequest request = HttpRequest.newBuilder()
+                        .uri(URI.create(url))
+                        .header("Authorization", "Bearer " + accessToken)
+                        .header("Content-Type", "application/json")
+                        .DELETE()
+                        .build();
+
+                HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+                int statusCode = response.statusCode();
+
+                if (statusCode >= 200 && statusCode < 300) {
+                    System.out.println("Deleted customer with internal id=" + customer.getInternalId());
+                } else {
+                    System.err.println("Failed to delete customer with internal id=" + customer.getInternalId()
+                            + ". Status: " + statusCode + ". Response: " + response.body());
+                }
+
+            } catch (Exception e) {
+                System.err.println(
+                        "Error deleting customer with internal id=" + customer.getInternalId() + ": " + e.getMessage());
                 e.printStackTrace();
             }
         }

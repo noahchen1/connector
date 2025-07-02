@@ -39,27 +39,6 @@ public class ConnectorApplication implements CommandLineRunner {
 			TokenResponseDto parsedRes = mapper.readValue(tokenRes, TokenResponseDto.class);
 			accessToken = parsedRes.getAccess_token();
 
-			// expiresIn = System.currentTimeMillis() + parsedRes.getExpires_in();
-			// String custResponse = netsuiteCustomerClient.getCustomerEmail(accessToken,
-			// "149777");
-
-			// customerService.syncCustomers(accessToken, netsuiteCustomerClient);
-
-			// CustomerDto customerDto = new CustomerDto();
-
-			// customerDto.setCustId("CUST169708");
-			// customerDto.setInternalId(378135);
-			// customerDto.setEmail("nuoya1996@gmail.com");
-			// customerDto.setFirstname("John");
-			// customerDto.setLastname("Doe");
-			// customerDto.setSubsidiary(9);
-
-			// List<CustomerDto> customerList = new ArrayList<>();
-			// customerList.add(customerDto);
-
-			// System.out.println(customerList);
-			// netsuiteCustomerClient.updateCustomers(accessToken, customerList);
-
 			customerService.syncCustomers(accessToken, netsuiteCustomerClient);
 			System.out.println("process finished!");
 		} catch (Exception e) {

@@ -5,69 +5,12 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
-
 import org.springframework.stereotype.Repository;
-
 import com.example.connector.aws.DbConnection;
 import com.example.connector.dto.CustomerDto;
-import com.example.connector.dto.CustomerResponseDto;
 
 @Repository
 public class CustomerRepository {
-    // public void updateCustomers(List<CustomerResponseDto.CustomerItem> customers)
-    // throws Exception {
-    // try (Connection conn = DbConnection.getConnection()) {
-    // final String selectSql = "SELECT email, firstname, lastname FROM customers
-    // WHERE cust_id = ?";
-    // final String insertSql = "INSERT INTO customers (cust_id, email, firstname,
-    // lastname) VALUES (?, ?, ?, ?) ";
-    // final String updateSql = "UPDATE customers SET email = ?, firstname = ?,
-    // lastname = ? WHERE cust_id = ?";
-
-    // for (CustomerResponseDto.CustomerItem customer : customers) {
-    // PreparedStatement selectStmt = conn.prepareStatement(selectSql);
-    // selectStmt.setString(1, customer.getCust_id());
-    // ResultSet rs = selectStmt.executeQuery();
-
-    // if (rs.next()) {
-    // boolean needsUpdate = false;
-
-    // if (!Objects.equals(rs.getString("email"), customer.getEmail()))
-    // needsUpdate = true;
-    // if (!Objects.equals(rs.getString("firstname"), customer.getFirstname()))
-    // needsUpdate = true;
-    // if (!Objects.equals(rs.getString("lastname"), customer.getLastname()))
-    // needsUpdate = true;
-
-    // if (needsUpdate) {
-    // PreparedStatement updateStmt = conn.prepareStatement(updateSql);
-    // updateStmt.setString(1, customer.getEmail());
-    // updateStmt.setString(2, customer.getFirstname());
-    // updateStmt.setString(3, customer.getLastname());
-    // updateStmt.setString(4, customer.getCust_id());
-    // updateStmt.executeUpdate();
-    // updateStmt.close();
-    // }
-
-    // } else {
-    // PreparedStatement insertStmt = conn.prepareStatement(insertSql);
-    // insertStmt.setString(1, customer.getCust_id());
-    // insertStmt.setString(2, customer.getEmail());
-    // insertStmt.setString(3, customer.getFirstname());
-    // insertStmt.setString(4, customer.getLastname());
-    // insertStmt.executeUpdate();
-    // insertStmt.close();
-    // }
-
-    // selectStmt.close();
-    // }
-
-    // } catch (Exception e) {
-    // System.err.println("Error: " + e.getMessage());
-    // }
-    // }
-
     public void printAllCustomers() throws Exception {
         try (Connection conn = DbConnection.getConnection()) {
             String sql = "SELECT * FROM customers";
@@ -75,10 +18,8 @@ public class CustomerRepository {
             ResultSet rs = stmt.executeQuery();
 
             while (rs.next()) {
-                System.out.println(rs.getString("cust_id") + ", " +
-                        rs.getString("email") + ", " +
-                        rs.getString("firstname") + ", " +
-                        rs.getString("lastname"));
+                System.out.println(rs.getString("cust_id") + ", " + rs.getString("email") + ", "
+                        + rs.getString("firstname") + ", " + rs.getString("lastname"));
             }
         } catch (Exception e) {
             System.err.println("Error: " + e.getMessage());
@@ -89,7 +30,8 @@ public class CustomerRepository {
         List<CustomerDto> customers = new ArrayList<>();
 
         try (Connection conn = DbConnection.getConnection()) {
-            String sql = "SELECT internal_id, cust_id, email, firstname, lastname, subsidiary, address, id FROM customers";
+            String sql =
+                    "SELECT internal_id, cust_id, email, firstname, lastname, subsidiary, address, id FROM customers";
             PreparedStatement stmt = conn.prepareStatement(sql);
             ResultSet rs = stmt.executeQuery();
 
@@ -118,7 +60,8 @@ public class CustomerRepository {
 
         int[] results = null;
         try (Connection conn = DbConnection.getConnection()) {
-            final String sql = "INSERT INTO customers (internal_id, cust_id, email, firstname, lastname, subsidiary, address) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            final String sql =
+                    "INSERT INTO customers (internal_id, cust_id, email, firstname, lastname, subsidiary, address) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
             PreparedStatement stmt = conn.prepareStatement(sql);
 
@@ -141,15 +84,15 @@ public class CustomerRepository {
 
                 if (result >= 0) {
                     System.out.println("Created customer: custId=" + customer.getCustId()
-                            + ", firstname=" + customer.getFirstname()
-                            + ", lastname=" + customer.getLastname());
+                            + ", firstname=" + customer.getFirstname() + ", lastname="
+                            + customer.getLastname());
                 }
                 idx++;
             }
 
             stmt.close();
         } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
+            System.err.println("Failed to add customers to DB: " + e.getMessage());
         }
     }
 
@@ -160,7 +103,8 @@ public class CustomerRepository {
         int[] results = null;
         int idx = 0;
         try (Connection conn = DbConnection.getConnection()) {
-            final String sql = "UPDATE customers SET cust_id = ?, email = ?, firstname = ?, lastname = ?, subsidiary = ?, address = ? WHERE internal_id = ?";
+            final String sql =
+                    "UPDATE customers SET cust_id = ?, email = ?, firstname = ?, lastname = ?, subsidiary = ?, address = ? WHERE internal_id = ?";
             PreparedStatement stmt = conn.prepareStatement(sql);
             for (CustomerDto customer : customers) {
                 stmt.setString(1, customer.getCustId());
@@ -179,14 +123,14 @@ public class CustomerRepository {
                 int result = results != null && idx < results.length ? results[idx] : 0;
                 if (result >= 0) {
                     System.out.println("Updated customer: custId=" + customer.getCustId()
-                            + ", firstname=" + customer.getFirstname()
-                            + ", lastname=" + customer.getLastname());
+                            + ", firstname=" + customer.getFirstname() + ", lastname="
+                            + customer.getLastname());
                 }
                 idx++;
             }
             stmt.close();
         } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
+            System.err.println("Failed to update customers in DB: " + e.getMessage());
         }
     }
 
@@ -198,7 +142,8 @@ public class CustomerRepository {
         int idx = 0;
 
         try (Connection conn = DbConnection.getConnection()) {
-            final String sql = "UPDATE customers SET internal_id = ?, cust_id = ?, email = ?, firstname = ?, lastname = ?, subsidiary = ?, address = ? WHERE id = ?";
+            final String sql =
+                    "UPDATE customers SET internal_id = ?, cust_id = ?, email = ?, firstname = ?, lastname = ?, subsidiary = ?, address = ? WHERE id = ?";
 
             PreparedStatement stmt = conn.prepareStatement(sql);
 
@@ -220,14 +165,14 @@ public class CustomerRepository {
                 int result = results != null && idx < results.length ? results[idx] : 0;
                 if (result >= 0) {
                     System.out.println("Updated customer by id: id=" + customer.getId()
-                            + ", internalId=" + customer.getInternalId()
-                            + ", custId=" + customer.getCustId());
+                            + ", internalId=" + customer.getInternalId() + ", custId="
+                            + customer.getCustId());
                 }
                 idx++;
             }
             stmt.close();
         } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
+            System.err.println("Failed to update customers by row id: " + e.getMessage());
         }
     }
 
@@ -254,15 +199,16 @@ public class CustomerRepository {
                 int result = results != null && idx < results.length ? results[idx] : 0;
 
                 if (result >= 0) {
-                    System.out.println("Deleted customer with internal id=" + customer.getInternalId() + ", custId="
-                            + customer.getCustId() + " " + customer.getFirstname() + " " + customer.getLastname());
+                    System.out.println("Deleted customer with internal id="
+                            + customer.getInternalId() + ", custId=" + customer.getCustId() + " "
+                            + customer.getFirstname() + " " + customer.getLastname());
                 }
 
                 idx++;
             }
 
         } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
+            System.err.println("Failed to delete customers in DB: " + e.getMessage());
         }
     }
 }

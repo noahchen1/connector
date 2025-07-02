@@ -1,12 +1,13 @@
 package com.example.connector.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
-
+import org.springframework.transaction.annotation.Transactional;
 import com.example.connector.dto.CustomerDto;
 import com.example.connector.dto.CustomerItemDto;
 import com.example.connector.netsuite.NetsuiteCustomerClient;
@@ -30,11 +31,8 @@ public class CustomerService {
                 return customer;
         }
 
-        private void runUpdate(
-                        List<CustomerDto> sourceList,
-                        List<CustomerDto> targetList,
-                        Map<Integer, CustomerDto> targetMap,
-                        Consumer<List<CustomerDto>> createFn,
+        private void runUpdate(List<CustomerDto> sourceList, List<CustomerDto> targetList,
+                        Map<Integer, CustomerDto> targetMap, Consumer<List<CustomerDto>> createFn,
                         Consumer<List<CustomerDto>> updateFn) {
                 List<CustomerDto> toInsert = new java.util.ArrayList<>();
                 List<CustomerDto> toUpdate = new java.util.ArrayList<>();
@@ -52,48 +50,72 @@ public class CustomerService {
                 updateFn.accept(toUpdate);
         }
 
-        private List<CustomerDto> fetchNsCustomers(String accessToken, NetsuiteCustomerClient client) throws Exception {
-                return client.getCustomers(accessToken).stream().map(this::toCustomerDto).collect(Collectors.toList());
+        private List<CustomerDto> fetchNsCustomers(String accessToken,
+                        NetsuiteCustomerClient client) throws Exception {
+                return client.getCustomers(accessToken).stream().map(this::toCustomerDto)
+                                .collect(Collectors.toList());
         }
 
         private void syncDbFromNs(List<CustomerDto> nsCustomers, List<CustomerDto> dbCustomers) {
                 Map<Integer, CustomerDto> dbMap = dbCustomers.stream()
                                 .collect(Collectors.toMap(CustomerDto::getInternalId, c -> c));
 
-                runUpdate(nsCustomers, dbCustomers, dbMap, toInsert -> customerRepository.insertCustomers(toInsert),
+                runUpdate(nsCustomers, dbCustomers, dbMap,
+                                toInsert -> customerRepository.insertCustomers(toInsert),
                                 toUpdate -> customerRepository.updateCustomers(toUpdate));
         }
 
-        private void syncNsFromDb(String accessToken, NetsuiteCustomerClient client, List<CustomerDto> dbCustomers,
+        private void syncNsFromDb(String accessToken, NetsuiteCustomerClient client,
+                        List<CustomerDto> dbCustomers, List<CustomerDto> nsCustomers,
+                        List<CustomerDto> createdInNs) {
+                Map<Integer, CustomerDto> nsMap = nsCustomers.stream()
+                                .collect(Collectors.toMap(CustomerDto::getInternalId, c -> c));
+
+                runUpdate(dbCustomers, nsCustomers, nsMap, toInsert -> {
+                        client.createCustomers(accessToken, toInsert);
+                        createdInNs.addAll(toInsert);
+                }, toUpdate -> {
+                });
+        }
+
+        private void deleteDbCustomers(List<CustomerDto> dbCustomers,
                         List<CustomerDto> nsCustomers) {
                 Map<Integer, CustomerDto> nsMap = nsCustomers.stream()
                                 .collect(Collectors.toMap(CustomerDto::getInternalId, c -> c));
-
-                runUpdate(dbCustomers, nsCustomers, nsMap,
-                                toInsert -> client.createCustomers(accessToken, toInsert),
-                                toUpdate -> {
-                                });
-        }
-
-        private void deleteDbCustomers(List<CustomerDto> dbCustomers, List<CustomerDto> nsCustomers) {
-                Map<Integer, CustomerDto> nsMap = nsCustomers.stream()
-                                .collect(Collectors.toMap(CustomerDto::getInternalId, c -> c));
-                List<CustomerDto> toDelete = dbCustomers.stream().filter(c -> nsMap.get(c.getInternalId()) == null)
+                List<CustomerDto> toDelete = dbCustomers.stream()
+                                .filter(c -> nsMap.get(c.getInternalId()) == null)
                                 .collect(Collectors.toList());
 
                 if (!toDelete.isEmpty())
                         customerRepository.deleteCustomers(toDelete);
         }
 
-        public void syncCustomers(String accessToken, NetsuiteCustomerClient netsuiteCustomerClient) throws Exception {
-                List<CustomerDto> nsCustomers = fetchNsCustomers(accessToken, netsuiteCustomerClient);
+        @Transactional
+        public void syncCustomers(String accessToken, NetsuiteCustomerClient netsuiteCustomerClient)
+                        throws Exception {
+                List<CustomerDto> nsCustomers =
+                                fetchNsCustomers(accessToken, netsuiteCustomerClient);
                 List<CustomerDto> dbCustomers = customerRepository.getAllCustomers();
+                List<CustomerDto> createdInNs = new ArrayList<>();
 
-                syncDbFromNs(nsCustomers, dbCustomers);
-                syncNsFromDb(accessToken, netsuiteCustomerClient, dbCustomers, nsCustomers);
+                try {
+                        syncDbFromNs(nsCustomers, dbCustomers);
+                        syncNsFromDb(accessToken, netsuiteCustomerClient, dbCustomers, nsCustomers,
+                                        createdInNs);
 
-                List<CustomerDto> updatedNsCustomers = fetchNsCustomers(accessToken, netsuiteCustomerClient);
-                deleteDbCustomers(dbCustomers, updatedNsCustomers);
+                        List<CustomerDto> updatedNsCustomers =
+                                        fetchNsCustomers(accessToken, netsuiteCustomerClient);
+                        deleteDbCustomers(dbCustomers, updatedNsCustomers);
+                } catch (Exception e) {
+                        try {
+                                netsuiteCustomerClient.deleteCustomers(accessToken, createdInNs);
+                        } catch (Exception err) {
+                                System.err.println(
+                                                "Failed to revert changed to NS, manually intervention required: "
+                                                                + e.getMessage());
+                        }
+                        throw e;
+                }
         }
 
 }
