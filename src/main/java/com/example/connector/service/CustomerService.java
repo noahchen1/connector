@@ -52,36 +52,48 @@ public class CustomerService {
                 updateFn.accept(toUpdate);
         }
 
-        public void syncCustomers(String accessToken, NetsuiteCustomerClient netsuiteCustomerClient) throws Exception {
-                List<CustomerItemDto> nsCustomers = netsuiteCustomerClient.getCustomers(accessToken);
-                List<CustomerDto> dbCustomers = customerRepository.getAllCustomers();
+        private List<CustomerDto> fetchNsCustomers(String accessToken, NetsuiteCustomerClient client) throws Exception {
+                return client.getCustomers(accessToken).stream().map(this::toCustomerDto).collect(Collectors.toList());
+        }
 
-                List<CustomerDto> parsedNsCustomers = nsCustomers.stream()
-                                .map(this::toCustomerDto)
-                                .collect(Collectors.toList());
-
-                Map<Integer, CustomerDto> nsMap = parsedNsCustomers.stream()
-                                .collect(Collectors.toMap(CustomerDto::getInternalId, c -> c));
-
+        private void syncDbFromNs(List<CustomerDto> nsCustomers, List<CustomerDto> dbCustomers) {
                 Map<Integer, CustomerDto> dbMap = dbCustomers.stream()
                                 .collect(Collectors.toMap(CustomerDto::getInternalId, c -> c));
 
-                runUpdate(parsedNsCustomers, dbCustomers, dbMap,
-                                toInsert -> customerRepository.insertCustomers(toInsert),
+                runUpdate(nsCustomers, dbCustomers, dbMap, toInsert -> customerRepository.insertCustomers(toInsert),
                                 toUpdate -> customerRepository.updateCustomers(toUpdate));
+        }
 
-                runUpdate(dbCustomers, parsedNsCustomers, nsMap,
-                                toInsert -> netsuiteCustomerClient.createCustomers(accessToken, toInsert),
+        private void syncNsFromDb(String accessToken, NetsuiteCustomerClient client, List<CustomerDto> dbCustomers,
+                        List<CustomerDto> nsCustomers) {
+                Map<Integer, CustomerDto> nsMap = nsCustomers.stream()
+                                .collect(Collectors.toMap(CustomerDto::getInternalId, c -> c));
+
+                runUpdate(dbCustomers, nsCustomers, nsMap,
+                                toInsert -> client.createCustomers(accessToken, toInsert),
                                 toUpdate -> {
                                 });
+        }
 
-                List<CustomerDto> toDelete = dbCustomers.stream()
-                                .filter(c -> nsMap.get(c.getInternalId()) == null)
+        private void deleteDbCustomers(List<CustomerDto> dbCustomers, List<CustomerDto> nsCustomers) {
+                Map<Integer, CustomerDto> nsMap = nsCustomers.stream()
+                                .collect(Collectors.toMap(CustomerDto::getInternalId, c -> c));
+                List<CustomerDto> toDelete = dbCustomers.stream().filter(c -> nsMap.get(c.getInternalId()) == null)
                                 .collect(Collectors.toList());
-
-                System.out.println("Customers to delete: " + toDelete);
 
                 if (!toDelete.isEmpty())
                         customerRepository.deleteCustomers(toDelete);
         }
+
+        public void syncCustomers(String accessToken, NetsuiteCustomerClient netsuiteCustomerClient) throws Exception {
+                List<CustomerDto> nsCustomers = fetchNsCustomers(accessToken, netsuiteCustomerClient);
+                List<CustomerDto> dbCustomers = customerRepository.getAllCustomers();
+
+                syncDbFromNs(nsCustomers, dbCustomers);
+                syncNsFromDb(accessToken, netsuiteCustomerClient, dbCustomers, nsCustomers);
+
+                List<CustomerDto> updatedNsCustomers = fetchNsCustomers(accessToken, netsuiteCustomerClient);
+                deleteDbCustomers(dbCustomers, updatedNsCustomers);
+        }
+
 }

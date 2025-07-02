@@ -105,7 +105,8 @@ public class NetsuiteCustomerClient {
         List<CustomerDto> updatedCustomers = new ArrayList<>();
 
         for (CustomerDto customer : customers) {
-            if (customer.getInternalId() != null) continue;
+            if (customer.getInternalId() != 0)
+                continue;
 
             try {
                 String requestBody = mapper.writeValueAsString(customer);
