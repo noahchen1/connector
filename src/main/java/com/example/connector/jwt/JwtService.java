@@ -17,7 +17,7 @@ import com.nimbusds.jwt.SignedJWT;
 @Service
 public class JwtService {
     public String createJwt(String clientId, String certificateId, String audience, String scope,
-            ECPrivateKey privateKey) throws Exception {
+                            ECPrivateKey privateKey) throws Exception {
         Instant now = Instant.now();
         JWTClaimsSet claims = new JWTClaimsSet.Builder()
                 .issuer(clientId)

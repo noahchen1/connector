@@ -27,19 +27,15 @@ public class NetsuiteCustomerClient {
     }
 
     public String getCustomerEmail(String accessToken, String customerId) throws Exception {
-        String url = "https://5405357-sb1.suitetalk.api.netsuite.com/services/rest/record/v1/customer/"
-                + customerId + "?fields=email,entityId";
+        String url = "https://5405357-sb1.suitetalk.api.netsuite.com/services/rest/record/v1/customer/" + customerId
+                + "?fields=email,entityId";
 
         System.out.println("token " + accessToken);
         System.out.println("request url " + url);
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url))
                 .header("Authorization", "Bearer " + accessToken) // Fixed header name and added space
-                .header("Accept", "application/json")
-                .header("Content-Type", "application/json")
-                .GET()
-                .build();
+                .header("Accept", "application/json").header("Content-Type", "application/json").GET().build();
 
         HttpClient client = HttpClient.newHttpClient();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -75,13 +71,9 @@ public class NetsuiteCustomerClient {
                 """;
         final String formmatedQuery = String.format("{\"q\": \"%s\"}", queryStr.replaceAll("\\s+", " ").trim());
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("Authorization", "Bearer " + accessToken)
-                .header("Content-Type", "application/json")
-                .header("Prefer", "transient")
-                .POST(HttpRequest.BodyPublishers.ofString(formmatedQuery))
-                .build();
+        HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url))
+                .header("Authorization", "Bearer " + accessToken).header("Content-Type", "application/json")
+                .header("Prefer", "transient").POST(HttpRequest.BodyPublishers.ofString(formmatedQuery)).build();
 
         HttpClient client = HttpClient.newHttpClient();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
@@ -107,12 +99,9 @@ public class NetsuiteCustomerClient {
 
             try {
                 String requestBody = mapper.writeValueAsString(customer);
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(url))
-                        .header("Authorization", "Bearer " + accessToken)
-                        .header("Content-Type", "application/json")
-                        .POST(HttpRequest.BodyPublishers.ofString(requestBody))
-                        .build();
+                HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url))
+                        .header("Authorization", "Bearer " + accessToken).header("Content-Type", "application/json")
+                        .POST(HttpRequest.BodyPublishers.ofString(requestBody)).build();
 
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 int statusCode = response.statusCode();
@@ -193,12 +182,9 @@ public class NetsuiteCustomerClient {
                 String url = baseUrl + customer.getInternalId();
                 String requestBody = mapper.writeValueAsString(customer);
 
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(url))
-                        .header("Authorization", "Bearer " + accessToken)
-                        .header("Content-Type", "application/json")
-                        .method("PATCH", HttpRequest.BodyPublishers.ofString(requestBody))
-                        .build();
+                HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url))
+                        .header("Authorization", "Bearer " + accessToken).header("Content-Type", "application/json")
+                        .method("PATCH", HttpRequest.BodyPublishers.ofString(requestBody)).build();
 
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 int statusCode = response.statusCode();
@@ -259,12 +245,9 @@ public class NetsuiteCustomerClient {
             String url = baseUrl + customer.getInternalId();
 
             try {
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(url))
-                        .header("Authorization", "Bearer " + accessToken)
-                        .header("Content-Type", "application/json")
-                        .DELETE()
-                        .build();
+                HttpRequest request = HttpRequest.newBuilder().uri(URI.create(url))
+                        .header("Authorization", "Bearer " + accessToken).header("Content-Type", "application/json")
+                        .DELETE().build();
 
                 HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
                 int statusCode = response.statusCode();

@@ -19,36 +19,36 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootApplication
 public class ConnectorApplication implements CommandLineRunner {
-	@Autowired
-	private NetsuiteAuthClient netsuiteAuthClient;
+    @Autowired
+    private NetsuiteAuthClient netsuiteAuthClient;
 
-	@Autowired
-	private NetsuiteCustomerClient netsuiteCustomerClient;
+    @Autowired
+    private NetsuiteCustomerClient netsuiteCustomerClient;
 
-	@Autowired
-	private CustomerService customerService;
+    @Autowired
+    private CustomerService customerService;
 
-	private String accessToken;
-	private long expiresIn;
+    private String accessToken;
+    private long expiresIn;
 
-	@Override
-	public void run(String... args) throws Exception {
-		try {
-			String tokenRes = netsuiteAuthClient.fetchAccessToken();
-			ObjectMapper mapper = new ObjectMapper();
-			TokenResponseDto parsedRes = mapper.readValue(tokenRes, TokenResponseDto.class);
-			accessToken = parsedRes.getAccess_token();
+    @Override
+    public void run(String... args) throws Exception {
+        try {
+            String tokenRes = netsuiteAuthClient.fetchAccessToken();
+            ObjectMapper mapper = new ObjectMapper();
+            TokenResponseDto parsedRes = mapper.readValue(tokenRes, TokenResponseDto.class);
+            accessToken = parsedRes.getAccess_token();
 
-			customerService.syncCustomers(accessToken, netsuiteCustomerClient);
-			System.out.println("process finished!");
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
+            customerService.syncCustomers(accessToken, netsuiteCustomerClient);
+            System.out.println("process finished!");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
-	public static void main(String[] args) throws Exception {
-		SpringApplication.run(ConnectorApplication.class, args);
-	}
+    public static void main(String[] args) throws Exception {
+        SpringApplication.run(ConnectorApplication.class, args);
+    }
 }
 
 // ssh -i /d/repo/default.pem -L
