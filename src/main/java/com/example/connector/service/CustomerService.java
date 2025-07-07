@@ -51,7 +51,8 @@ public class CustomerService {
         updateFn.accept(toUpdate);
     }
 
-    private List<CustomerDto> fetchNsCustomers(String accessToken, NetsuiteCustomerClient client) throws Exception {
+    private List<CustomerDto> fetchNsCustomers(String accessToken,
+                                               NetsuiteCustomerClient client) {
         return client.getCustomers(accessToken).stream().map(this::toCustomerDto).collect(Collectors.toList());
     }
 
@@ -59,8 +60,8 @@ public class CustomerService {
         Map<Integer, CustomerDto> dbMap = dbCustomers.stream()
                 .collect(Collectors.toMap(CustomerDto::getInternalId, c -> c));
 
-        runUpdate(nsCustomers, dbCustomers, dbMap, toInsert -> customerRepository.insertCustomers(toInsert),
-                toUpdate -> customerRepository.updateCustomers(toUpdate));
+        runUpdate(nsCustomers, dbCustomers, dbMap, customerRepository::insertCustomers,
+                customerRepository::updateCustomers);
     }
 
     private void syncNsFromDb(String accessToken, NetsuiteCustomerClient client, List<CustomerDto> dbCustomers,
@@ -86,7 +87,7 @@ public class CustomerService {
     }
 
     @Transactional
-    public void syncCustomers(String accessToken, NetsuiteCustomerClient netsuiteCustomerClient) throws Exception {
+    public void syncCustomers(String accessToken, NetsuiteCustomerClient netsuiteCustomerClient) {
         List<CustomerDto> nsCustomers = fetchNsCustomers(accessToken, netsuiteCustomerClient);
         List<CustomerDto> dbCustomers = customerRepository.getAllCustomers();
         List<CustomerDto> createdInNs = new ArrayList<>();

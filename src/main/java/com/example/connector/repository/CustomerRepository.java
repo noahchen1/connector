@@ -3,31 +3,24 @@ package com.example.connector.repository;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.example.connector.util.CustomerLogHelper;
 import org.springframework.stereotype.Repository;
 import com.example.connector.aws.DbConnection;
 import com.example.connector.dto.CustomerDto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @Repository
 public class CustomerRepository {
-    public void printAllCustomers() throws Exception {
-        try (Connection conn = DbConnection.getConnection()) {
-            String sql = "SELECT * FROM customers";
-            PreparedStatement stmt = conn.prepareStatement(sql);
-            ResultSet rs = stmt.executeQuery();
+    private final Logger logger =
+            LoggerFactory.getLogger(CustomerRepository.class);
 
-            while (rs.next()) {
-                System.out.println(rs.getString("cust_id") + ", " + rs.getString("email") + ", "
-                        + rs.getString("firstname") + ", " + rs.getString("lastname"));
-            }
-        } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
-        }
-    }
-
-    public List<CustomerDto> getAllCustomers() throws Exception {
+    public List<CustomerDto> getAllCustomers() {
         List<CustomerDto> customers = new ArrayList<>();
 
         try (Connection conn = DbConnection.getConnection()) {
@@ -47,8 +40,32 @@ public class CustomerRepository {
                 customer.setId(rs.getInt("id"));
                 customers.add(customer);
             }
+
+            CustomerLogHelper.logCustomerAction(
+                    logger,
+                    "",
+                    "",
+                    "",
+                    CustomerLogHelper.ActionType.FETCH_CUSTOMERS,
+                    CustomerLogHelper.SourceType.DB,
+                    CustomerLogHelper.Status.SUCCESS,
+                    "",
+                    false
+            );
         } catch (Exception e) {
-            System.err.println("Error: " + e.getMessage());
+            CustomerLogHelper.logCustomerAction(
+                    logger,
+                    "",
+                    "",
+                    "",
+                    CustomerLogHelper.ActionType.FETCH_CUSTOMERS,
+                    CustomerLogHelper.SourceType.DB,
+                    CustomerLogHelper.Status.FAIL,
+                    e.getMessage(),
+                    true
+            );
+
+            throw new RuntimeException(e);
         }
 
         return customers;
@@ -58,7 +75,6 @@ public class CustomerRepository {
         if (customers == null || customers.isEmpty())
             return;
 
-        int[] results = null;
         try (Connection conn = DbConnection.getConnection()) {
             final String sql = "INSERT INTO customers (internal_id, cust_id, email, firstname, lastname, subsidiary, address) VALUES (?, ?, ?, ?, ?, ?, ?)";
 
@@ -76,21 +92,41 @@ public class CustomerRepository {
                 stmt.addBatch();
             }
 
-            results = stmt.executeBatch();
+            int[] results = stmt.executeBatch();
+            for (int i = 0; i < results.length; i++) {
+                if (results[i] >= 0) {
+                    CustomerDto customer = customers.get(i);
 
-            for (CustomerDto customer : customers) {
-                int result = results != null && idx < results.length ? results[idx] : 0;
-
-                if (result >= 0) {
-                    System.out.println("Created customer: custId=" + customer.getCustId() + ", firstname="
-                            + customer.getFirstname() + ", lastname=" + customer.getLastname());
+                    CustomerLogHelper.logCustomerAction(
+                            logger,
+                            customer.getCustId(),
+                            customer.getFirstname(),
+                            customer.getLastname(),
+                            CustomerLogHelper.ActionType.CREATE_CUSTOMERS,
+                            CustomerLogHelper.SourceType.DB,
+                            CustomerLogHelper.Status.SUCCESS,
+                            "",
+                            false
+                    );
                 }
-                idx++;
             }
 
             stmt.close();
+
         } catch (Exception e) {
-            System.err.println("Failed to add customers to DB: " + e.getMessage());
+            CustomerLogHelper.logCustomerAction(
+                    logger,
+                    "",
+                    "",
+                    "",
+                    CustomerLogHelper.ActionType.CREATE_CUSTOMERS,
+                    CustomerLogHelper.SourceType.DB,
+                    CustomerLogHelper.Status.FAIL,
+                    e.getMessage(),
+                    true
+            );
+
+            throw new RuntimeException(e);
         }
     }
 
@@ -115,27 +151,45 @@ public class CustomerRepository {
             }
 
             results = stmt.executeBatch();
-            idx = 0;
-            for (CustomerDto customer : customers) {
-                int result = results != null && idx < results.length ? results[idx] : 0;
-                if (result >= 0) {
-                    System.out.println("Updated customer: custId=" + customer.getCustId() + ", firstname="
-                            + customer.getFirstname() + ", lastname=" + customer.getLastname());
+            for (int i = 0; i < results.length; i++) {
+                if (results[i] >= 0) {
+                    CustomerDto customer = customers.get(i);
+
+                    CustomerLogHelper.logCustomerAction(
+                            logger,
+                            customer.getCustId(),
+                            customer.getFirstname(),
+                            customer.getLastname(),
+                            CustomerLogHelper.ActionType.UPDATE_CUSTOMERS,
+                            CustomerLogHelper.SourceType.DB,
+                            CustomerLogHelper.Status.SUCCESS,
+                            "",
+                            false
+                    );
                 }
-                idx++;
             }
+
             stmt.close();
         } catch (Exception e) {
-            System.err.println("Failed to update customers in DB: " + e.getMessage());
+            CustomerLogHelper.logCustomerAction(
+                    logger,
+                    "",
+                    "",
+                    "",
+                    CustomerLogHelper.ActionType.UPDATE_CUSTOMERS,
+                    CustomerLogHelper.SourceType.DB,
+                    CustomerLogHelper.Status.FAIL,
+                    e.getMessage(),
+                    true
+            );
+
+            throw new RuntimeException(e);
         }
     }
 
     public void updateCustomersById(List<CustomerDto> customers) {
         if (customers == null || customers.isEmpty())
             return;
-
-        int[] results = null;
-        int idx = 0;
 
         try (Connection conn = DbConnection.getConnection()) {
             final String sql = "UPDATE customers SET internal_id = ?, cust_id = ?, email = ?, firstname = ?, lastname = ?, subsidiary = ?, address = ? WHERE id = ?";
@@ -154,19 +208,40 @@ public class CustomerRepository {
                 stmt.addBatch();
             }
 
-            results = stmt.executeBatch();
-            idx = 0;
-            for (CustomerDto customer : customers) {
-                int result = results != null && idx < results.length ? results[idx] : 0;
-                if (result >= 0) {
-                    System.out.println("Updated customer by id: id=" + customer.getId() + ", internalId="
-                            + customer.getInternalId() + ", custId=" + customer.getCustId());
+            int[] results = stmt.executeBatch();
+            for (int i = 0; i < results.length; i++) {
+                if (results[i] >= 0) {
+                    CustomerDto customer = customers.get(i);
+
+                    CustomerLogHelper.logCustomerAction(
+                            logger,
+                            customer.getCustId(),
+                            customer.getFirstname(),
+                            customer.getLastname(),
+                            CustomerLogHelper.ActionType.UPDATE_CUSTOMERS,
+                            CustomerLogHelper.SourceType.DB,
+                            CustomerLogHelper.Status.SUCCESS,
+                            "",
+                            false
+                    );
                 }
-                idx++;
             }
+
             stmt.close();
         } catch (Exception e) {
-            System.err.println("Failed to update customers by row id: " + e.getMessage());
+            CustomerLogHelper.logCustomerAction(
+                    logger,
+                    "",
+                    "",
+                    "",
+                    CustomerLogHelper.ActionType.UPDATE_CUSTOMERS,
+                    CustomerLogHelper.SourceType.DB,
+                    CustomerLogHelper.Status.FAIL,
+                    e.getMessage(),
+                    true
+            );
+
+            throw new RuntimeException(e);
         }
     }
 
@@ -174,8 +249,6 @@ public class CustomerRepository {
         if (customers == null || customers.isEmpty())
             return;
 
-        int[] results;
-        int idx = 0;
 
         try (Connection conn = DbConnection.getConnection()) {
             final String sql = "DELETE FROM customers WHERE internal_id = ?";
@@ -187,21 +260,40 @@ public class CustomerRepository {
                 stmt.addBatch();
             }
 
-            results = stmt.executeBatch();
+            int[] results = stmt.executeBatch();
 
-            for (CustomerDto customer : customers) {
-                int result = results != null && idx < results.length ? results[idx] : 0;
+            for (int i = 0; i < results.length; i++) {
+                if (results[i] >= 0) {
+                    CustomerDto customer = customers.get(i);
 
-                if (result >= 0) {
-                    System.out.println("Deleted customer with internal id=" + customer.getInternalId() + ", custId="
-                            + customer.getCustId() + " " + customer.getFirstname() + " " + customer.getLastname());
+                    CustomerLogHelper.logCustomerAction(
+                            logger,
+                            customer.getCustId(),
+                            customer.getFirstname(),
+                            customer.getLastname(),
+                            CustomerLogHelper.ActionType.DELETE_CUSTOMERS,
+                            CustomerLogHelper.SourceType.DB,
+                            CustomerLogHelper.Status.SUCCESS,
+                            "",
+                            false
+                    );
                 }
-
-                idx++;
             }
 
         } catch (Exception e) {
-            System.err.println("Failed to delete customers in DB: " + e.getMessage());
+            CustomerLogHelper.logCustomerAction(
+                    logger,
+                    "",
+                    "",
+                    "db",
+                    CustomerLogHelper.ActionType.DELETE_CUSTOMERS,
+                    CustomerLogHelper.SourceType.DB,
+                    CustomerLogHelper.Status.FAIL,
+                    e.getMessage(),
+                    true)
+            ;
+
+            throw new RuntimeException(e);
         }
     }
 }

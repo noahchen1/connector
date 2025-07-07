@@ -28,25 +28,29 @@ public class ConnectorApplication implements CommandLineRunner {
     @Autowired
     private CustomerService customerService;
 
-    private String accessToken;
     private long expiresIn;
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         try {
             String tokenRes = netsuiteAuthClient.fetchAccessToken();
             ObjectMapper mapper = new ObjectMapper();
             TokenResponseDto parsedRes = mapper.readValue(tokenRes, TokenResponseDto.class);
-            accessToken = parsedRes.getAccess_token();
-
+            String accessToken = parsedRes.getAccess_token();
             customerService.syncCustomers(accessToken, netsuiteCustomerClient);
             System.out.println("process finished!");
         } catch (Exception e) {
+            System.err.println("Sync failed: " + e.getMessage());
             e.printStackTrace();
+
+            throw new RuntimeException(e);
         }
     }
 
     public static void main(String[] args) throws Exception {
+        String timestamp = java.time.LocalDateTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
+        System.setProperty("logging.file.name", "logs/app-" + timestamp + ".log");
         SpringApplication.run(ConnectorApplication.class, args);
     }
 }
