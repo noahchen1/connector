@@ -18,3 +18,17 @@
         <appender-ref ref="FILE"/>
     </root>
 </configuration>
+
+
+
+<!--<appender name="S3" class="com.bluedenim.logback.s3.S3Appender">-->
+<!--<accessKey>YOUR_AWS_ACCESS_KEY</accessKey>-->
+<!--<secretKey>YOUR_AWS_SECRET_KEY</secretKey>-->
+<!--<region>us-east-1</region>-->
+<!--<bucketName>your-s3-bucket</bucketName>-->
+<!--<fileNamePattern>logs/app-%d{yyyy-MM-dd}.log</fileNamePattern>-->
+<!--</appender>-->
+
+<!--<root level="INFO">-->
+<!--<appender-ref ref="S3"/>-->
+<!--</root>-->

@@ -37,3 +37,4 @@ private.pem
 default.pem
 
 .env
+*.log
