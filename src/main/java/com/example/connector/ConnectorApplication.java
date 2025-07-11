@@ -3,10 +3,12 @@ package com.example.connector;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.github.cdimascio.dotenv.Dotenv;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 
 import com.example.connector.dto.CustomerDto;
@@ -28,6 +30,9 @@ public class ConnectorApplication implements CommandLineRunner {
     @Autowired
     private CustomerService customerService;
 
+    @Autowired
+    private ApplicationContext context;
+
     private long expiresIn;
 
     @Override
@@ -45,12 +50,18 @@ public class ConnectorApplication implements CommandLineRunner {
 
             throw new RuntimeException(e);
         }
+
+        int exitCode = SpringApplication.exit(context);
+        System.exit(exitCode);
     }
 
     public static void main(String[] args) throws Exception {
+        Dotenv dotenv = Dotenv.load();
         String timestamp = java.time.LocalDateTime.now()
                 .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss"));
         System.setProperty("logging.file.name", "logs/app-" + timestamp + ".log");
+        System.setProperty("aws.accessKeyId", dotenv.get("AWS_ACCESS_KEY_ID"));
+        System.setProperty("aws.secretAccessKey", dotenv.get("AWS_SECRET_ACCESS_KEY"));
         SpringApplication.run(ConnectorApplication.class, args);
     }
 }

@@ -1,4 +1,4 @@
-package com.example.connector.service;
+package com.example.connector.aws;
 
 import jakarta.annotation.PreDestroy;
 import org.springframework.stereotype.Service;
