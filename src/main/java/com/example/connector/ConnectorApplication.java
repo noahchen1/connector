@@ -20,7 +20,7 @@ import com.example.connector.service.CustomerService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 @SpringBootApplication
-public class ConnectorApplication implements CommandLineRunner {
+public class ConnectorApplication {
     @Autowired
     private NetsuiteAuthClient netsuiteAuthClient;
 
@@ -35,25 +35,26 @@ public class ConnectorApplication implements CommandLineRunner {
 
     private long expiresIn;
 
-    @Override
-    public void run(String... args) {
-        try {
-            String tokenRes = netsuiteAuthClient.fetchAccessToken();
-            ObjectMapper mapper = new ObjectMapper();
-            TokenResponseDto parsedRes = mapper.readValue(tokenRes, TokenResponseDto.class);
-            String accessToken = parsedRes.getAccess_token();
-            customerService.syncCustomers(accessToken, netsuiteCustomerClient);
-            System.out.println("process finished!");
-        } catch (Exception e) {
-            System.err.println("Sync failed: " + e.getMessage());
-            e.printStackTrace();
-
-            throw new RuntimeException(e);
-        }
-
-        int exitCode = SpringApplication.exit(context);
-        System.exit(exitCode);
-    }
+    // @Override
+    // public void run(String... args) {
+    // try {
+    // String tokenRes = netsuiteAuthClient.fetchAccessToken();
+    // ObjectMapper mapper = new ObjectMapper();
+    // TokenResponseDto parsedRes = mapper.readValue(tokenRes,
+    // TokenResponseDto.class);
+    // String accessToken = parsedRes.getAccess_token();
+    // customerService.syncCustomers(accessToken, netsuiteCustomerClient);
+    // System.out.println("process finished!");
+    // } catch (Exception e) {
+    // System.err.println("Sync failed: " + e.getMessage());
+    // e.printStackTrace();
+    //
+    // throw new RuntimeException(e);
+    // }
+    //
+    // int exitCode = SpringApplication.exit(context);
+    // System.exit(exitCode);
+    // }
 
     public static void main(String[] args) throws Exception {
         Dotenv dotenv = Dotenv.load();
